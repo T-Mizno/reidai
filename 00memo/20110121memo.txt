@@ -1,0 +1,33 @@
+ghciだとできるげど、ファイルから読み込むとエラーになる。
+
+Prelude Graphics.UI.GLUT> let x = 10.5 ::GLfloat
+Prelude Graphics.UI.GLUT> floor x
+10
+
+-- ファイルtes.hsここから
+import Graphics.UI.GLUT
+
+func :: GLfloat -> GLfloat
+func x = floor x
+--ここまで
+
+デスクトップ>runghc tes.hs
+
+tes.hs:4:9:
+    Could not deduce (RealFrac a, Integral a) from the context (Num a)
+      arising from a use of `floor' at tes.hs:4:9-15
+    Possible fix:
+      add (RealFrac a, Integral a) to the context of
+        the type signature for `func'
+    In the expression: floor x
+    In the definition of `func': func x = floor x
+
+ghci で :load tes.hsとやっても同様のエラーが出る
+
+
+入力の GLfloat ではなく、出力側のGLfloatが問題だった。
+
+func :: (Integral b) => GLfloat  -> b
+
+で解決。
+

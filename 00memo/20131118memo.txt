@@ -1,0 +1,7 @@
+solvable:T, m:100, n:100, freeDim:0, diffB:4.710964276455343D-11, diffXs:0.0 
+(CHECK_GAUSS_MN 100 100) took 1,108,000 microseconds (1.108000 seconds) to run 
+                    with 2 available CPU cores.
+During that period, 1,107,607 microseconds (1.107607 seconds) were spent in user mode
+                    0 microseconds (0.000000 seconds) were spent in system mode
+ 60,556,016 bytes of memory allocated.
+T

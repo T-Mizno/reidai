@@ -1,0 +1,27 @@
+CL-USER> (time (check_gauss_mn 100 110))
+solvable:T, m:100, n:100, freeDim:0, diffB:4.457542672753334D-11, diffXs:0.0 
+(CHECK_GAUSS_MN 100 100) took 655 milliseconds (0.655 seconds) to run 
+                    with 8 available CPU cores.
+During that period, 655 milliseconds (0.655 seconds) were spent in user mode
+                    0 milliseconds (0.000 seconds) were spent in system mode
+31 milliseconds (0.031 seconds) was spent in GC.
+ 26,628,008 bytes of memory allocated.
+T
+CL-USER> (time (check_gauss_mn 110 100))
+solvable:T, m:100, n:110, freeDim:10, diffB:4.2800622230226344D-10, diffXs:1.1169269953370531D-8 
+(CHECK_GAUSS_MN 100 110) took 889 milliseconds (0.889 seconds) to run 
+                    with 8 available CPU cores.
+During that period, 889 milliseconds (0.889 seconds) were spent in user mode
+                    0 milliseconds (0.000 seconds) were spent in system mode
+16 milliseconds (0.016 seconds) was spent in GC.
+ 42,652,864 bytes of memory allocated.
+T
+CL-USER> (time (check_gauss_mn 110 100))
+solvable:T, m:110, n:100, freeDim:0, diffB:5.8038329536264596D-11, diffXs:0.0 
+(CHECK_GAUSS_MN 110 100) took 718 milliseconds (0.718 seconds) to run 
+                    with 8 available CPU cores.
+During that period, 718 milliseconds (0.718 seconds) were spent in user mode
+                    0 milliseconds (0.000 seconds) were spent in system mode
+31 milliseconds (0.031 seconds) was spent in GC.
+ 30,494,440 bytes of memory allocated.
+T

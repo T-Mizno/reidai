@@ -1,0 +1,134 @@
+ガウスの消去法の速度改善について Haskell
+
+問題
+
+ガウスの消去法のボトルネックを探す。
+
+症状
+
+行列のサイズが20×20程度でメモリリークする。
+
+
+分析
+
+実行時にプロファイルを取得して分析した結果、以下のことが分かった。
+
+行列の生成ではなく、要素へのアクセスがボトルネックになっていた。
+
+修正前のプロファイル抜粋:
+(pivotj2i や key や p2i が配列の要素にアクセスする関数)
+        backward.f             Main                       211     1048575   19.5   67.7    99.8   98.3
+         backward.f.\          Main                       221     1048555    3.2   10.6    23.3   14.6
+          backward.pivotj2i    Main                       222      524287    1.1    2.7    20.2    4.0
+           key                 Main                       225     1572842    0.7    0.0     0.7    0.0
+           p2i                 Main                       223      524287    0.3    0.0    18.3    1.3
+            val                Main                       224      524287   18.0    1.3    18.0    1.3
+         backward.pivotj2i     Main                       215     2097150    1.8   10.6    57.0   15.9
+          key                  Main                       219     4194260    3.7    0.0     3.7    0.0
+          p2i                  Main                       216     2097150    0.4    0.0    51.4    5.3
+
+
+高頻度に値を返す関数は、一旦、変数に格納するスタイルに修正した。
+
+修正後:
+      backward                    Main                       214           1    0.0    0.0     0.0    0.6
+       backward.x                 Main                       215           1    0.0    0.2     0.0    0.6
+        jEnd                      Main                       233           1    0.0    0.0     0.0    0.0
+        freeColIndices            Main                       220           1    0.0    0.1     0.0    0.1
+         colIndices               Main                       222           1    0.0    0.0     0.0    0.0
+          jEnd                    Main                       224           1    0.0    0.0     0.0    0.0
+          jStart                  Main                       223           1    0.0    0.0     0.0    0.0
+         baseColIndices           Main                       221           1    0.0    0.0     0.0    0.0
+          baseColIndices.\        Main                       225          20    0.0    0.0     0.0    0.0
+        backwardOneLine           Main                       219          20    0.0    0.3     0.0    0.3
+         backwardOneLine.\        Main                       234         190    0.0    0.0     0.0    0.0
+         backwardOneLine.pivotj2i Main                       226          20    0.0    0.0     0.0    0.0
+          key                     Main                       232         210    0.0    0.0     0.0    0.0
+          p2i                     Main                       227          20    0.0    0.0     0.0    0.0
+           val                    Main                       228          20    0.0    0.0     0.0    0.0
+        colIndices                Main                       216           1    0.0    0.0     0.0    0.0
+         jEnd                     Main                       218           1    0.0    0.0     0.0    0.0
+         jStart                   Main                       217           1    0.0    0.0     0.0    0.0
+      gauss.makex                 Main                       206           1    0.0    0.0     0.0    0.0
+       newMatrix'                 Main                       211           1    0.0    0.0     0.0    0.0
+     gauss.ub                     Main                       189           1    0.0    0.0     0.0    0.0
+     solvable                     Main                       161           1    0.0    0.0     0.0    0.1
+      freeRowIndices              Main                       162           1    0.0    0.1     0.0    0.1
+       rowIndices                 Main                       164           1    0.0    0.0     0.0    0.0
+        iEnd                      Main                       166           1    0.0    0.0     0.0    0.0
+        iStart                    Main                       165           1    0.0    0.0     0.0    0.0
+       baseRowIndices             Main                       163           1    0.0    0.0     0.0    0.0
+        baseRowIndices.\          Main                       167          20    0.0    0.0     0.0    0.0
+     gauss.pivots                 Main                       160           1    0.0    0.0     0.0    0.0
+     gauss.u                      Main                       159           1    0.0    0.0     0.0    0.0
+     iStart                       Main                       106           1    0.0    0.0     0.0    0.0
+     gauss.(...)                  Main                       105           1    0.0    0.0    31.2   22.0
+      forward.newA                Main                       151           1    0.0    0.0     0.0    0.0
+      forward.(...)               Main                       137           1    0.0    0.0     0.0    0.0
+      forwardRows                 Main                       136           1    0.0    0.0     0.0    0.0
+      newP                        Main                       121           1    0.0    0.0     0.0    0.0
+       rowIndices                 Main                       122           2    0.0    0.0     0.0    0.0
+        iEnd                      Main                       124           2    0.0    0.0     0.0    0.0
+        iStart                    Main                       123           2    0.0    0.0     0.0    0.0
+      jStart                      Main                       109           1    0.0    0.0     0.0    0.0
+      forward                     Main                       107          21    0.0    0.1    31.2   21.9
+       forward.newb               Main                       190          20    0.0    0.0     0.0    0.0
+       forward.newA               Main                       158          19    0.0    0.0     0.0    0.0
+       forwardRows                Main                       157          19    0.0    0.0     0.0    0.0
+       forward.(...)              Main                       138          19    0.0    0.0    31.2   21.2
+        forwardRows               Main                       139           0    6.2    5.4    31.2   21.2
+         forwardOneLineB          Main                       195         400    0.0    0.3     0.0    0.4
+          forwardOneLineB.pvi     Main                       201          19    0.0    0.0     0.0    0.0
+           p2i                    Main                       202          19    0.0    0.0     0.0    0.0
+            val                   Main                       203          19    0.0    0.0     0.0    0.0
+          forwardOneLineB.pvv     Main                       200         190    0.0    0.0     0.0    0.0
+          forwardOneLineB.fbi     Main                       199         400    0.0    0.0     0.0    0.0
+          forwardOneLineB.pci     Main                       196         400    0.0    0.0     0.0    0.1
+           p2i                    Main                       197         400    0.0    0.0     0.0    0.1
+            val                   Main                       198         400    0.0    0.1     0.0    0.1
+         iEnd                     Main                       194          20    0.0    0.0     0.0    0.0
+         iStart                   Main                       193          20    0.0    0.0     0.0    0.0
+         forwardRows.js           Main                       144          20    0.0    0.0     0.0    0.3
+          colIndices              Main                       145          20    0.0    0.3     0.0    0.3
+           jEnd                   Main                       147          20    0.0    0.0     0.0    0.0
+           jStart                 Main                       146          20    0.0    0.0     0.0    0.0
+         forwardOneLineA          Main                       143         400    0.0   14.0    25.0   14.6
+          forwardOneLineA.pvi     Main                       154          19    0.0    0.0     0.0    0.0
+           p2i                    Main                       155          19    0.0    0.0     0.0    0.0
+            val                   Main                       156          19    0.0    0.0     0.0    0.0
+          forwardOneLineA.pvv     Main                       153         190    0.0    0.0     0.0    0.0
+          forwardOneLineA.fai     Main                       152        8000   25.0    0.5    25.0    0.5
+          forwardOneLineA.pci     Main                       148         400    0.0    0.0     0.0    0.1
+           p2i                    Main                       149         400    0.0    0.0     0.0    0.1
+            val                   Main                       150         400    0.0    0.1     0.0    0.1
+         rowIndices               Main                       140          40    0.0    0.5     0.0    0.5
+          iEnd                    Main                       142          20    0.0    0.0     0.0    0.0
+          iStart                  Main                       141          20    0.0    0.0     0.0    0.0
+       nextPivotj                 Main                       110          20    0.0    0.0     0.0    0.7
+        nextPivotj.p              Main                       117          20    0.0    0.0     0.0    0.6
+
+
+考察
+
+要素数350以上は実行速度にストレスが出てくる。
+これ以降は、行列の生成を改善する必要がある。
+
+
+その他
+
+ランダムな数値を持つ行列を生成する関数を作成した。
+
+プロファイルを取得する方法:
+ghc -O2 -prof -auto-all source.hs -rtsopts -o exefile
+exefile 20 20 +RTS -p
+
+exefile.prof というファイルが生成される。
+
+
+ソースコード
+
+QuickCheck:
+quickCheck test_gauss
+
+
+

@@ -1,0 +1,98 @@
+user=> (time (myzLinear/itr_gauss 10))
+diffs is zero? true
+solvable? true
+diffs x, xs:  0.0 0.0
+m n freeVarNum 1 3 2
+diffs is zero? true
+solvable? true
+diffs x, xs:  4.558306601312425E-8 0.0
+m n freeVarNum 36 13 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.2844800949096679E-7 2.1961454876873177E-10
+m n freeVarNum 25 36 11
+diffs is zero? true
+solvable? true
+diffs x, xs:  9.840975205103557E-8 0.0
+m n freeVarNum 36 29 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.3607657617992825E-8 0.0
+m n freeVarNum 36 4 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.9371509552001954E-8 0.0
+m n freeVarNum 10 6 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  4.8273553450902305E-8 -4.926903329760535E-11
+m n freeVarNum 12 19 7
+diffs is zero? true
+solvable? true
+diffs x, xs:  3.451371894163244E-8 0.0
+m n freeVarNum 34 16 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.4498999172990972E-8 0.0
+m n freeVarNum 22 9 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  8.327119490679572E-8 -1.0523493187974964E-10
+m n freeVarNum 17 27 10
+diffs is zero? true
+solvable? true
+diffs x, xs:  3.9507683954740823E-8 0.0
+m n freeVarNum 38 11 0
+"Elapsed time: 5440.264391 msecs"
+nil
+
+
+after
+user=> (time (myzLinear/itr_gauss 10))
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.1548399925231934E-7 -5.5365489970427006E-11
+m n freeVarNum 9 14 5
+diffs is zero? true
+solvable? true
+diffs x, xs:  4.284083843231201E-8 -4.430944500199985E-11
+m n freeVarNum 8 27 19
+diffs is zero? true
+solvable? true
+diffs x, xs:  5.970494105265691E-7 3.708020557269265E-10
+m n freeVarNum 26 38 12
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.5011226589029486E-7 0.0
+m n freeVarNum 44 38 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  7.324852049350739E-7 5.401599167953464E-10
+m n freeVarNum 28 47 19
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.200915951477854E-8 0.0
+m n freeVarNum 38 4 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  7.388492425282796E-8 -7.105427357601002E-15
+m n freeVarNum 3 39 36
+diffs is zero? true
+solvable? true
+diffs x, xs:  9.149769131018191E-8 0.0
+m n freeVarNum 49 35 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  2.8405338525772095E-8 0.0
+m n freeVarNum 24 11 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  2.815626388372377E-8 0.0
+m n freeVarNum 43 11 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.3898198421184833E-7 0.0
+m n freeVarNum 39 32 0
+"Elapsed time: 1893.778033 msecs"
+nil
+

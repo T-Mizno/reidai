@@ -1,0 +1,33 @@
+user=> (time (myzLinear/itr_gauss 1))
+diffs is zero? true
+solvable? true
+diffs x, xs:  2.359350522359212E-8 -2.5693225325085223E-11
+m n freeVarNum 6 46 40
+diffs is zero? true
+solvable? true
+diffs x, xs:  9.432435035705566E-7 -7.82705456003896E-10
+m n freeVarNum 5 16 11
+"Elapsed time: 2697.443512 msecs"
+nil
+user=> (time (myzLinear/itr_gauss 1))
+diffs is zero? true
+solvable? true
+diffs x, xs:  1.2966875846569354E-7 8.161293862940511E-11
+m n freeVarNum 26 34 8
+diffs is zero? true
+solvable? true
+diffs x, xs:  0.0 0.0
+m n freeVarNum 45 1 0
+"Elapsed time: 2616.904633 msecs"
+nil
+user=> (time (myzLinear/itr_gauss 1))
+diffs is zero? true
+solvable? true
+diffs x, xs:  2.0861625671386717E-8 0.0
+m n freeVarNum 25 15 0
+diffs is zero? true
+solvable? true
+diffs x, xs:  3.5906067261329065E-7 1.6055423657235224E-10
+m n freeVarNum 39 45 6
+"Elapsed time: 6050.73998 msecs"
+nil

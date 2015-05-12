@@ -1,0 +1,170 @@
+	Mon Oct 21 23:50 2013 Time and Allocation Profiling Report  (Final)
+
+	   20131019gauss.exe +RTS -p -RTS 20 20
+
+	total time  =        2.57 secs   (2570 ticks @ 1000 us, 1 processor)
+	total alloc = 315,890,300 bytes  (excludes profiling overheads)
+
+COST CENTRE          MODULE  %time %alloc
+
+val                  Main     69.1    6.7
+backward.f           Main     19.5   67.7
+key                  Main      4.5    0.0
+backward.f.\         Main      3.2   10.6
+backward.pivotj2i    Main      3.0   13.3
+matrix2str.row2str.\ Main      0.0    1.2
+
+
+                                                                            individual     inherited
+COST CENTRE                    MODULE                     no.     entries  %time %alloc   %time %alloc
+
+MAIN                           MAIN                        45           0    0.0    0.0   100.0  100.0
+ main                          Main                        91           0    0.0    0.0   100.0  100.0
+  main.n                       Main                        99           1    0.0    0.0     0.0    0.0
+  main.m                       Main                        97           1    0.0    0.0     0.0    0.0
+  exgauss                      Main                        92           1    0.0    0.1   100.0  100.0
+   exgauss.pivots              Main                       230           1    0.0    0.0     0.0    0.0
+   exgauss.p                   Main                       229           1    0.0    0.0     0.0    0.0
+   exgauss.flg                 Main                       228           1    0.0    0.0     0.0    0.0
+   exgauss.x                   Main                       196           1    0.0    0.0     0.0    0.0
+   exgauss.b                   Main                       185           1    0.0    0.0     0.0    0.0
+    newMatrix                  Main                       186           1    0.0    0.0     0.0    0.0
+   exgauss.ub                  Main                       182           1    0.0    0.0     0.0    0.0
+   stdout                      Main                       163           3    0.2    0.0     0.2    1.4
+    matrix2str                 Main                       164           3    0.0    0.1     0.0    1.4
+     matrix2str.\              Main                       176          60    0.0    0.0     0.0    1.3
+      matrix2str.row2str       Main                       177          60    0.0    0.2     0.0    1.3
+       matrix2str.row2str.\    Main                       181         440    0.0    1.2     0.0    1.2
+       colIndices              Main                       178           3    0.0    0.0     0.0    0.0
+        jEnd                   Main                       180           3    0.0    0.0     0.0    0.0
+        jStart                 Main                       179           3    0.0    0.0     0.0    0.0
+     rowIndices                Main                       173           3    0.0    0.0     0.0    0.0
+      iEnd                     Main                       175           3    0.0    0.0     0.0    0.0
+      iStart                   Main                       174           3    0.0    0.0     0.0    0.0
+     matrix2str.itemLine       Main                       165           3    0.0    0.0     0.0    0.0
+      matrix2str.itemLine.\    Main                       169          22    0.0    0.0     0.0    0.0
+      colIndices               Main                       166           3    0.0    0.0     0.0    0.0
+       jEnd                    Main                       168           3    0.0    0.0     0.0    0.0
+       jStart                  Main                       167           3    0.0    0.0     0.0    0.0
+   jEnd                        Main                       162           1    0.0    0.0     0.0    0.0
+   exgauss.(...)               Main                       103           1    0.0    0.0    99.8   98.5
+    gauss                      Main                       104           1    0.0    0.0    99.8   98.5
+     gauss.p                   Main                       218           1    0.0    0.0     0.0    0.0
+     gauss.makex               Main                       199           0    0.0    0.0     0.0    0.0
+      jEnd                     Main                       205           1    0.0    0.0     0.0    0.0
+      jStart                   Main                       204           1    0.0    0.0     0.0    0.0
+      colIndices               Main                       200           1    0.0    0.0     0.0    0.0
+       jEnd                    Main                       202           1    0.0    0.0     0.0    0.0
+       jStart                  Main                       201           1    0.0    0.0     0.0    0.0
+     gauss.x                   Main                       197           1    0.0    0.0    99.8   98.3
+      backward                 Main                       206           1    0.0    0.0    99.8   98.3
+       backward.f              Main                       212           0    0.0    0.0     0.0    0.0
+        jEnd                   Main                       220           1    0.0    0.0     0.0    0.0
+        baseColIndices         Main                       213           1    0.0    0.0     0.0    0.0
+         baseColIndices.\      Main                       214          20    0.0    0.0     0.0    0.0
+       backward.x              Main                       207           1    0.0    0.0    99.8   98.3
+        backward.f             Main                       211     1048575   19.5   67.7    99.8   98.3
+         backward.f.\          Main                       221     1048555    3.2   10.6    23.3   14.6
+          backward.pivotj2i    Main                       222      524287    1.1    2.7    20.2    4.0
+           key                 Main                       225     1572842    0.7    0.0     0.7    0.0
+           p2i                 Main                       223      524287    0.3    0.0    18.3    1.3
+            val                Main                       224      524287   18.0    1.3    18.0    1.3
+         backward.pivotj2i     Main                       215     2097150    1.8   10.6    57.0   15.9
+          key                  Main                       219     4194260    3.7    0.0     3.7    0.0
+          p2i                  Main                       216     2097150    0.4    0.0    51.4    5.3
+           val                 Main                       217     2097150   51.1    5.3    51.1    5.3
+        colIndices             Main                       208           1    0.0    0.0     0.0    0.0
+         jEnd                  Main                       210           1    0.0    0.0     0.0    0.0
+         jStart                Main                       209           1    0.0    0.0     0.0    0.0
+      gauss.makex              Main                       198           1    0.0    0.0     0.0    0.0
+       newMatrix'              Main                       203           1    0.0    0.0     0.0    0.0
+     gauss.ub                  Main                       183           1    0.0    0.0     0.0    0.0
+     solvable                  Main                       155           1    0.0    0.0     0.0    0.0
+      freeRowIndices           Main                       156           1    0.0    0.0     0.0    0.0
+       rowIndices              Main                       158           1    0.0    0.0     0.0    0.0
+        iEnd                   Main                       160           1    0.0    0.0     0.0    0.0
+        iStart                 Main                       159           1    0.0    0.0     0.0    0.0
+       baseRowIndices          Main                       157           1    0.0    0.0     0.0    0.0
+        baseRowIndices.\       Main                       161          20    0.0    0.0     0.0    0.0
+     gauss.pivots              Main                       154           1    0.0    0.0     0.0    0.0
+     gauss.u                   Main                       153           1    0.0    0.0     0.0    0.0
+     iStart                    Main                       106           1    0.0    0.0     0.0    0.0
+     gauss.(...)               Main                       105           1    0.0    0.0     0.0    0.2
+      forward.newA             Main                       141           1    0.0    0.0     0.0    0.0
+      newP                     Main                       121           1    0.0    0.0     0.0    0.0
+       rowIndices              Main                       122           2    0.0    0.0     0.0    0.0
+        iEnd                   Main                       124           2    0.0    0.0     0.0    0.0
+        iStart                 Main                       123           2    0.0    0.0     0.0    0.0
+      jStart                   Main                       109           1    0.0    0.0     0.0    0.0
+      forward                  Main                       107          21    0.0    0.0     0.0    0.2
+       forward.newb            Main                       184          20    0.0    0.0     0.0    0.0
+       forward.newA            Main                       152          19    0.0    0.0     0.0    0.0
+       forward.(...)           Main                       136          20    0.0    0.0     0.0    0.2
+        forwardRows            Main                       137          20    0.0    0.2     0.0    0.2
+         forwardRows.fb        Main                       190         400    0.0    0.0     0.0    0.0
+          forwardRows.pv       Main                       193         190    0.0    0.0     0.0    0.0
+           p2i                 Main                       194         190    0.0    0.0     0.0    0.0
+            val                Main                       195         190    0.0    0.0     0.0    0.0
+          p2i                  Main                       191         419    0.0    0.0     0.0    0.0
+           val                 Main                       192         419    0.0    0.0     0.0    0.0
+         rowIndices            Main                       189          20    0.0    0.0     0.0    0.0
+         iEnd                  Main                       188          20    0.0    0.0     0.0    0.0
+         iStart                Main                       187          20    0.0    0.0     0.0    0.0
+         forwardRows.pv        Main                       149           0    0.0    0.0     0.0    0.0
+          p2i                  Main                       150          19    0.0    0.0     0.0    0.0
+           val                 Main                       151          19    0.0    0.0     0.0    0.0
+         forwardRows.fa        Main                       142        8000    0.0    0.0     0.0    0.0
+          forwardRows.pv       Main                       146        2660    0.0    0.0     0.0    0.0
+           p2i                 Main                       147        2660    0.0    0.0     0.0    0.0
+            val                Main                       148        2660    0.0    0.0     0.0    0.0
+          p2i                  Main                       144        7829    0.0    0.0     0.0    0.0
+           val                 Main                       145          19    0.0    0.0     0.0    0.0
+          val                  Main                       143        7810    0.0    0.0     0.0    0.0
+         p2i                   Main                       139        8400    0.0    0.0     0.0    0.0
+          val                  Main                       140         400    0.0    0.0     0.0    0.0
+         val                   Main                       138        8000    0.0    0.0     0.0    0.0
+       nextPivotj              Main                       110          20    0.0    0.0     0.0    0.0
+        nextPivotj.p           Main                       117          20    0.0    0.0     0.0    0.0
+         updateP               Main                       118          20    0.0    0.0     0.0    0.0
+          searchMaxI           Main                       126          20    0.0    0.0     0.0    0.0
+           searchMaxI.\        Main                       129         210    0.0    0.0     0.0    0.0
+            p2i                Main                       131         209    0.0    0.0     0.0    0.0
+             val               Main                       132         209    0.0    0.0     0.0    0.0
+           absMaxI             Main                       128          20    0.0    0.0     0.0    0.0
+            absMaxI.maxI'      Main                       130         210    0.0    0.0     0.0    0.0
+           iEnd                Main                       127          20    0.0    0.0     0.0    0.0
+          swapP                Main                       119          20    0.0    0.0     0.0    0.0
+           val                 Main                       125          38    0.0    0.0     0.0    0.0
+           swapP'              Main                       120         420    0.0    0.0     0.0    0.0
+        iEnd                   Main                       113          20    0.0    0.0     0.0    0.0
+        underColumnsAreZero    Main                       112          20    0.0    0.0     0.0    0.0
+         underColumnsAreZero.\ Main                       114          20    0.0    0.0     0.0    0.0
+          isZero               Main                       133          20    0.0    0.0     0.0    0.0
+           near                Main                       134          20    0.0    0.0     0.0    0.0
+          p2i                  Main                       115          20    0.0    0.0     0.0    0.0
+           val                 Main                       116          20    0.0    0.0     0.0    0.0
+        idInRange              Main                       111          20    0.0    0.0     0.0    0.0
+       idInRange               Main                       108          21    0.0    0.0     0.0    0.0
+   exgauss.u                   Main                       102           1    0.0    0.0     0.0    0.0
+   exgauss.a                   Main                        95           1    0.0    0.0     0.0    0.0
+    newMatrix                  Main                        96           1    0.0    0.0     0.0    0.0
+   rowIndices                  Main                        93           1    0.0    0.0     0.0    0.0
+    iEnd                       Main                       101           1    0.0    0.0     0.0    0.0
+    iStart                     Main                        94           1    0.0    0.0     0.0    0.0
+ CAF                           GHC.IO.Encoding.CodePage    73           0    0.0    0.0     0.0    0.0
+ CAF                           GHC.Float                   71           0    0.0    0.0     0.0    0.0
+ CAF                           GHC.IO.Encoding             70           0    0.0    0.0     0.0    0.0
+ CAF                           Text.Read.Lex               67           0    0.0    0.0     0.0    0.0
+ CAF                           System.Environment          63           0    0.0    0.0     0.0    0.0
+ CAF                           GHC.Show                    61           0    0.0    0.0     0.0    0.0
+ CAF                           GHC.IO.Handle.FD            56           0    0.0    0.0     0.0    0.0
+ CAF                           Main                        52           0    0.0    0.0     0.0    0.0
+  backward                     Main                       226           0    0.0    0.0     0.0    0.0
+   backward.f                  Main                       227           0    0.0    0.0     0.0    0.0
+  stdout                       Main                       170           0    0.0    0.0     0.0    0.0
+   matrix2str                  Main                       171           0    0.0    0.0     0.0    0.0
+    matrix2str.itemLine        Main                       172           0    0.0    0.0     0.0    0.0
+  epsilon                      Main                       135           1    0.0    0.0     0.0    0.0
+  main.n                       Main                       100           0    0.0    0.0     0.0    0.0
+  main.m                       Main                        98           0    0.0    0.0     0.0    0.0
+  main                         Main                        90           1    0.0    0.0     0.0    0.0
