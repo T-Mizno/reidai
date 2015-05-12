@@ -1,4 +1,4 @@
--module(prolog2).
+-module(prolog).
 -compile(export_all).
 
 -define(NO_BINDINGS, [{true, true}]).
