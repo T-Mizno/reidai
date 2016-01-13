@@ -79,6 +79,8 @@ def unify (x, y, bindings)
 end
 
 def unifyVariable(var, x, bindings)
+  if (var.nil?() or x.nil?()) then return MATCH_FAIL end
+
   if isFail?(bindings) then return bindings end
   if (not getBinding(var, bindings).nil?()) then return unify(lookupVarValue(var, bindings), x, bindings) end
   if (isVariable?(x) and (not getBinding(x, bindings).nil?())) then return unify(var, lookupVarValue(x, bindings), bindings) end
@@ -96,6 +98,7 @@ def doesOccurs? (var, x, bindings)
 end
 
 def substBindings (bindings, x)
+  #if x.nil?() then return nil end
   if isFail?(bindings) then return MATCH_FAIL end
   if isNoBindings?(bindings) then return x end
   if (isVariable?(x) and (not getBinding(x, bindings).nil?())) then return substBindings(bindings, lookupVarValue(x, bindings)) end
@@ -217,7 +220,13 @@ def proveA (aGoals, db)
         next
       end
 
-      newGoals = substClause(newBind, bodyClause(gb[:goals])) + bodyClause(newClause)
+#      print("MATCH( G) : ")
+#      printClause([h])
+#      print("MATCH(DB) : ")
+#      printClause(newClause)
+      
+      #newGoals = substClause(newBind, bodyClause(gb[:goals])) + bodyClause(newClause)
+      newGoals = bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause))
       #newGoals = renameVariablesInClause(bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause)), newEnv)
 
       if newGoals.empty?() 
@@ -244,7 +253,9 @@ CS4 = [[makeRelation("likes", ["kim", "robin"])],
        [makeRelation("likes", ["sandy", "X"]), makeRelation("likes", ["X", "cats"])],
        [makeRelation("likes", ["kim", "X"]), makeRelation("likes", ["X", "lee"]), makeRelation("likes", ["X", "kim"])],
        [makeRelation("likes", ["X", "X"])],
-       [makeRelation("member2", ["X", "Ys"]), makeRelation("append", ["As", ["X", "Xs"], "Ys"])]
+       [makeRelation("member2", ["X", "Ys"]), makeRelation("append", ["As", ["X", "Xs"], "Ys"])],
+       [makeRelation("append", [[], "Ys", "Ys"])],
+       [makeRelation("append", [["X", "Xs"], "Ys", ["X", "Zs"]]), makeRelation("append", ["Xs", "Ys", "Zs"])]
        ]
 DB4 = begin
         db = {}
@@ -254,8 +265,21 @@ DB4 = begin
     
 Q4 = [makeRelation("likes", ["sandy", "Who"])]
 Q41 = [makeRelation("likes", ["Who", "sandy"])]
-Q42 = [makeRelation("member", ["X", ["1", ["2", ["3", ["4"]]]]])]
+Q42 = [makeRelation("member", ["X", ["1", ["2", ["3", ["4",[]]]]]])]
+Q43 = [makeRelation("member2", ["X", ["1", ["2", ["3", ["4",[]]]]]])]
+Q4a = [makeRelation("append", ["X", "Y", ["a", ["b", ["c", []]]]])]
 
+
+def allAns (q, db, var)
+  proveA(q, db).map{ |b| substBindings(b, var) }
+end
+def testp()
+  print(allAns(Q4, DB4, "Who"), "\n")
+  print(allAns(Q41, DB4, "Who"), "\n")
+  print(allAns(Q42, DB4, "X"), "\n")
+  print(allAns(Q43, DB4, "X"), "\n")
+  print(allAns(Q4a, DB4, "X"), "\n")
+end  
 
 def printRelation (r)
   print(" ", r[:pred])
