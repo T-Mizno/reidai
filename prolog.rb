@@ -28,6 +28,13 @@ def isVariable? (x)
   false
 end
 
+def isNoNameVariable? (x)
+  if not (x.class() == String) then return false end
+  if x.length() <= 0 then return false end
+
+  return  x[0] == "_"
+end
+
 def isList? (x)
   x.class() == Array
 end
@@ -70,6 +77,10 @@ def unify (x, y, bindings)
   #print("x: ", x, ", y: ", y, ", list: ", bindings, "\n")
 
   if isFail?(bindings) then return MATCH_FAIL end
+
+  if isNoNameVariable?(x) then return bindings end
+  if isNoNameVariable?(y) then return bindings end
+
   if x == y then return bindings end
   if isVariable?(x) then return unifyVariable(x, y, bindings) end
   if isVariable?(y) then return unifyVariable(y, x, bindings) end
@@ -167,7 +178,7 @@ end
 def substList (bindings, ls)
   if ls.empty?() or ls.nil?() then return ls end
 
-  if isVariable?(ls) and (not getBinding(ls, bindings).nil?()) then return substBindings(bindings (lookupVarValue(x, bindings))) end
+  if isVariable?(ls) and (not getBinding(ls, bindings).nil?()) then return substBindings(bindings, (lookupVarValue(ls, bindings))) end
 
   if isAtom?(ls) then return x end
 
@@ -195,18 +206,25 @@ def proveA (aGoals, db)
   goalsAndBinds = [{:goals => aGoals, :binds => NO_BINDINGS}]
 
   while not goalsAndBinds.empty?()
+    print("GGGG", goalsAndBinds, "\n")
+
     gb = first(goalsAndBinds)
     goalsAndBinds = tail(goalsAndBinds)
 
     h = headClause(gb[:goals])
+    
+    if db[h.first()].nil?() or db[h.first()].empty?() then next end
+
+    flgCut = false
     db[h.first()].each do |c|
       newEnv = newEnv+"A"
       newClause = renameVariablesInClause(c, newEnv)
-      #print("new ", newClause, "\n")
       newBind = unify(h, headClause(newClause), gb[:binds])
+
       if isFail?(newBind) then
         next
       end
+
 
       newGoals = substClause(newBind, bodyClause(newClause)) + bodyClause(gb[:goals])
       #newGoals = bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause))
@@ -228,16 +246,20 @@ end
 CS4 = [[["likes", "kim", "robin"]],
        [["likes", "kim", "robin"]],
        [["member", "Item", ["Item" , "Rest"]]],
-       [["member", "Item", ["X", "Rest"]], ["member", "Item", "Rest"]],
+       [["member", "Item", ["_", "Rest"]], ["member", "Item", "Rest"]],
        [["likes", "sandy", "lee"]],
        [["likes", "sandy", "kim"]],
+       [["or", "X", "Y"], "X", ["addGoals", "Y"]],
+       [["test"], ["or", ["test2"], ["test1"]]],
+       [["test2"]],
        [["likes", "robin", "cats"]],
        [["likes", "sandy", "X"], ["likes", "X", "cats"]],
        [["likes", "kim", "X"],["likes", "X", "lee"], ["likes", "X", "kim"]],
        [["likes", "X", "X"]],
        [["member2", "X", "Ys"], ["append", "As", ["X", "Xs"], "Ys"]],
        [["append", [], "Ys", "Ys"]],
-       [["append", ["X", "Xs"], "Ys", ["X", "Zs"]], ["append", "Xs", "Ys", "Zs"]]
+       [["append", ["X", "Xs"], "Ys", ["X", "Zs"]], ["append", "Xs", "Ys", "Zs"]],
+       [["cut"]]
       ]
 DB4 = begin
         db = {}
@@ -245,6 +267,7 @@ DB4 = begin
         db
       end
 
+Q4t = [["test"]]
 Q4 = [["likes", "sandy", "Who"]]
 Q41 = [["likes", "Who", "sandy"]]
 Q4m = [["member", "X", ["1", ["2", ["3", ["4",[]]]]]]]
@@ -263,9 +286,13 @@ def testp()
 end  
 
 def printRelation (r)
-  print(" ", r[:pred])
+  if not isList?(r) then
+    print(r)
+    return 
+  end
+  print(" ", first(r))
   print(" (")
-  r[:terms].each do |t|
+  tail(r).each do |t|
     print(" ", t, " ")
   end
   print(")")
