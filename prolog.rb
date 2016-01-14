@@ -124,11 +124,6 @@ end
 # irb(main):043:0> unify("W", ["Y", "X"], unify("W", ["hoo", "hai"], XS))
 # => [["W", ["hoo"]], ["Z", "delta"], ["Y", "hoo"], ["X", "hai"]]
 
-
-def makeRelation (pred, xs)
-  {pred: pred, terms: xs}
-end
-
 def bodyClause (cs)
   cs.drop(1)
 end
@@ -138,14 +133,14 @@ def headClause (cs)
 end
 
 def addDB (cs, db)
-  if db[headClause(cs)[:pred]].nil?() 
+  if db[headClause(cs).first()].nil?() 
   then 
     begin 
-      db.merge!({headClause(cs)[:pred] => [cs]})
+      db.merge!({headClause(cs).first() => [cs]})
     end
   else 
     begin
-      db[headClause(cs)[:pred]] += [cs]
+      db[headClause(cs).first()] += [cs]
     end
   end
 end
@@ -166,7 +161,7 @@ def variablesInTerm (ex)
 end
 
 def variablesInClause (c)
-  (c.inject([]) {|ac, r| ac + variablesInTerm(r[:terms])}).uniq()
+  (c.inject([]) {|ac, r| ac + variablesInTerm(r)}).uniq()
 end
 
 def substList (bindings, ls)
@@ -180,10 +175,7 @@ def substList (bindings, ls)
 end
 
 def substClause(bindings, c)
-  c.each do |r|
-    r[:terms] = substList(bindings, r[:terms])
-  end
-  c
+  return c.map{|r|  substList(bindings, r)}
 end
 
 def renameVariablesInClause (c, postfix)
@@ -191,7 +183,7 @@ def renameVariablesInClause (c, postfix)
   newVsBindings = vs.map{|v| makePair(v, v+"_"+postfix)}
   newC = []
   c.each do |r|
-    newR = {:pred => r[:pred], :terms => substList(newVsBindings, r[:terms])}
+    newR = substList(newVsBindings, r)
     newC.push(newR)
   end
   newC
@@ -203,30 +195,21 @@ def proveA (aGoals, db)
   goalsAndBinds = [{:goals => aGoals, :binds => NO_BINDINGS}]
 
   while not goalsAndBinds.empty?()
-    #print("GABs : " , goalsAndBinds, "\n")
     gb = first(goalsAndBinds)
     goalsAndBinds = tail(goalsAndBinds)
 
-    #if goalsAndBinds.length() >= 2 then break end
-
     h = headClause(gb[:goals])
-    db[h[:pred]].each do |c|
+    db[h.first()].each do |c|
       newEnv = newEnv+"A"
       newClause = renameVariablesInClause(c, newEnv)
       #print("new ", newClause, "\n")
-      newBind = unify(h[:terms], headClause(newClause)[:terms], gb[:binds])
+      newBind = unify(h, headClause(newClause), gb[:binds])
       if isFail?(newBind) then
-        #print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n")
         next
       end
 
-#      print("MATCH( G) : ")
-#      printClause([h])
-#      print("MATCH(DB) : ")
-#      printClause(newClause)
-      
-      #newGoals = substClause(newBind, bodyClause(gb[:goals])) + bodyClause(newClause)
-      newGoals = bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause))
+      newGoals = substClause(newBind, bodyClause(newClause)) + bodyClause(gb[:goals])
+      #newGoals = bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause))
       #newGoals = renameVariablesInClause(bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause)), newEnv)
 
       if newGoals.empty?() 
@@ -242,33 +225,31 @@ def proveA (aGoals, db)
   ans
 end
 
-
-CS4 = [[makeRelation("likes", ["kim", "robin"])],
-       [makeRelation("likes", ["kim", "robin"])],
-       [makeRelation("likes", ["sandy", "lee"])],
-       [makeRelation("likes", ["sandy", "kim"])],
-       [makeRelation("member", ["Item", ["Item" , "Rest"]])],
-       [makeRelation("likes", ["robin", "cats"])],
-       [makeRelation("member", ["Item", ["X", "Rest"]]), makeRelation("member", ["Item", "Rest"])],
-       [makeRelation("likes", ["sandy", "X"]), makeRelation("likes", ["X", "cats"])],
-       [makeRelation("likes", ["kim", "X"]), makeRelation("likes", ["X", "lee"]), makeRelation("likes", ["X", "kim"])],
-       [makeRelation("likes", ["X", "X"])],
-       [makeRelation("member2", ["X", "Ys"]), makeRelation("append", ["As", ["X", "Xs"], "Ys"])],
-       [makeRelation("append", [[], "Ys", "Ys"])],
-       [makeRelation("append", [["X", "Xs"], "Ys", ["X", "Zs"]]), makeRelation("append", ["Xs", "Ys", "Zs"])]
-       ]
+CS4 = [[["likes", "kim", "robin"]],
+       [["likes", "kim", "robin"]],
+       [["member", "Item", ["Item" , "Rest"]]],
+       [["member", "Item", ["X", "Rest"]], ["member", "Item", "Rest"]],
+       [["likes", "sandy", "lee"]],
+       [["likes", "sandy", "kim"]],
+       [["likes", "robin", "cats"]],
+       [["likes", "sandy", "X"], ["likes", "X", "cats"]],
+       [["likes", "kim", "X"],["likes", "X", "lee"], ["likes", "X", "kim"]],
+       [["likes", "X", "X"]],
+       [["member2", "X", "Ys"], ["append", "As", ["X", "Xs"], "Ys"]],
+       [["append", [], "Ys", "Ys"]],
+       [["append", ["X", "Xs"], "Ys", ["X", "Zs"]], ["append", "Xs", "Ys", "Zs"]]
+      ]
 DB4 = begin
         db = {}
         CS4.each{|cs| addDB(cs, db)}
         db
       end
-    
-Q4 = [makeRelation("likes", ["sandy", "Who"])]
-Q41 = [makeRelation("likes", ["Who", "sandy"])]
-Q42 = [makeRelation("member", ["X", ["1", ["2", ["3", ["4",[]]]]]])]
-Q43 = [makeRelation("member2", ["X", ["1", ["2", ["3", ["4",[]]]]]])]
-Q4a = [makeRelation("append", ["X", "Y", ["a", ["b", ["c", []]]]])]
 
+Q4 = [["likes", "sandy", "Who"]]
+Q41 = [["likes", "Who", "sandy"]]
+Q4m = [["member", "X", ["1", ["2", ["3", ["4",[]]]]]]]
+Q4a = [["append", "X", "Y", ["a", ["b", ["c", []]]]]]
+Q4m2 = [["member2", "X", ["1", ["2", ["3", ["4",[]]]]]]]
 
 def allAns (q, db, var)
   proveA(q, db).map{ |b| substBindings(b, var) }
@@ -276,8 +257,8 @@ end
 def testp()
   print(allAns(Q4, DB4, "Who"), "\n")
   print(allAns(Q41, DB4, "Who"), "\n")
-  print(allAns(Q42, DB4, "X"), "\n")
-  print(allAns(Q43, DB4, "X"), "\n")
+  print(allAns(Q4m, DB4, "X"), "\n")
+  print(allAns(Q4m2, DB4, "X"), "\n")
   print(allAns(Q4a, DB4, "X"), "\n")
 end  
 
