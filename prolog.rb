@@ -209,13 +209,47 @@ def proveA (aGoals, db)
     print("GGGG", goalsAndBinds, "\n")
 
     gb = first(goalsAndBinds)
+
     goalsAndBinds = tail(goalsAndBinds)
 
     h = headClause(gb[:goals])
+    if h.nil?() then
+      ans.push(gb[:binds])
+      next
+    end
     
-    if db[h.first()].nil?() or db[h.first()].empty?() then next end
 
-    flgCut = false
+    print("head ", h, "\n")
+    if first(h) == "tag" then 
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+
+    if first(h) == "either" then
+      goalsAndBinds.unshift({:goals =>  [h[1]] + [["del"]] + bodyClause(gb[:goals]), :binds => gb[:binds]},
+                            {:goals =>  [["tag"]] + [h[2]] + bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+
+    if first(h) == "del" then
+      goalsAndBinds.delete_if{|i| first(headClause(i[:goals])) == "tag"}
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+
+    # there are not in DB
+    if db[h.first()].nil?() then 
+      next
+    end
+
+    # there are in DB with [] body.
+    if db[h.first()].empty?() then 
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+    print("GGGH", goalsAndBinds, "\n")
+
+
     db[h.first()].each do |c|
       newEnv = newEnv+"A"
       newClause = renameVariablesInClause(c, newEnv)
@@ -235,7 +269,8 @@ def proveA (aGoals, db)
       else
         #print("BINDS :", newBind, "\n")
         #print("ADDDDD :", newGoals, "\n")
-        goalsAndBinds.push({:goals => newGoals, :binds => newBind})
+        #goalsAndBinds.push({:goals => newGoals, :binds => newBind})
+        goalsAndBinds.unshift({:goals => newGoals, :binds => newBind})
       end
 
     end
@@ -249,8 +284,8 @@ CS4 = [[["likes", "kim", "robin"]],
        [["member", "Item", ["_", "Rest"]], ["member", "Item", "Rest"]],
        [["likes", "sandy", "lee"]],
        [["likes", "sandy", "kim"]],
-       [["or", "X", "Y"], "X", ["addGoals", "Y"]],
-       [["test"], ["or", ["test2"], ["test1"]]],
+#       [["either", "X", "Y"]],
+       [["test"], ["either", ["test1"], ["test2"]]],
        [["test2"]],
        [["likes", "robin", "cats"]],
        [["likes", "sandy", "X"], ["likes", "X", "cats"]],
