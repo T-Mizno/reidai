@@ -220,22 +220,30 @@ def proveA (aGoals, db)
     
 
     print("head ", h, "\n")
+    print("binds ", gb[:binds], "\n")
+
+    if first(h) == "either" then
+      goalsAndBinds.unshift({:goals =>  h[1] + [["del", newEnv]] + bodyClause(gb[:goals]), :binds => gb[:binds]},
+                            {:goals =>  [["tag", newEnv]] + h[2] + bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+
+    if first(h) == "del" then
+      goalsAndBinds.delete_if do |i|
+        print("del h", h, "\n")
+        print("del i", headClause(i[:goals]), "\n")
+        (first(headClause(i[:goals])) == "tag") and (headClause(i[:goals])[1] == h[1])
+      end                                                                                
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      print("HHHHHH ", goalsAndBinds, "\n")
+      next
+    end
+
     if first(h) == "tag" then 
       goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
       next
     end
 
-    if first(h) == "either" then
-      goalsAndBinds.unshift({:goals =>  [h[1]] + [["del"]] + bodyClause(gb[:goals]), :binds => gb[:binds]},
-                            {:goals =>  [["tag"]] + [h[2]] + bodyClause(gb[:goals]), :binds => gb[:binds]})
-      next
-    end
-
-    if first(h) == "del" then
-      goalsAndBinds.delete_if{|i| first(headClause(i[:goals])) == "tag"}
-      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
-      next
-    end
 
     # there are not in DB
     if db[h.first()].nil?() then 
@@ -247,7 +255,6 @@ def proveA (aGoals, db)
       goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
       next
     end
-    print("GGGH", goalsAndBinds, "\n")
 
 
     db[h.first()].each do |c|
@@ -278,15 +285,17 @@ def proveA (aGoals, db)
   ans
 end
 
-CS4 = [[["likes", "kim", "robin"]],
-       [["likes", "kim", "robin"]],
+CS4 = [
+  #[["likes", "kim", "robin"]],
+      [["likes", "kim", "robin"]],
        [["member", "Item", ["Item" , "Rest"]]],
        [["member", "Item", ["_", "Rest"]], ["member", "Item", "Rest"]],
        [["likes", "sandy", "lee"]],
        [["likes", "sandy", "kim"]],
-#       [["either", "X", "Y"]],
-       [["test"], ["either", ["test1"], ["test2"]]],
-       [["test2"]],
+       #       [["either", "X", "Y"]],
+       #[["if", "Test", "Then", "Else"], ["either", ["Test"], ["Else"]], ["either", ["Else"], ["Then"]]],
+       [["test", "X"], ["if", ["likes", "X", "robin"], ["test1", "X"], ["unlikeRobin", "X"]]],
+       [["unlikeRobin", "kim"]],
        [["likes", "robin", "cats"]],
        [["likes", "sandy", "X"], ["likes", "X", "cats"]],
        [["likes", "kim", "X"],["likes", "X", "lee"], ["likes", "X", "kim"]],
@@ -303,7 +312,9 @@ DB4 = begin
       end
 
 Q4t = [["test"]]
+Q4i = [["test", "kim"]]
 Q4 = [["likes", "sandy", "Who"]]
+Q43 = [["likes", "kim", "robin"]]
 Q41 = [["likes", "Who", "sandy"]]
 Q4m = [["member", "X", ["1", ["2", ["3", ["4",[]]]]]]]
 Q4a = [["append", "X", "Y", ["a", ["b", ["c", []]]]]]
