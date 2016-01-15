@@ -200,13 +200,24 @@ def renameVariablesInClause (c, postfix)
   newC
 end
 
+def builtIn_gt (args, bindings)
+  if args.length < 3 then return false end
+  xy = substList(bindings, args)
+  x = xy[1]
+  y = xy[2]
+
+  return x.to_i() > y.to_i()
+end
+
+BUILT_INS = [{:pred => ">", :f => lambda{|args, binds| builtIn_gt(args, binds)}}]
+
 def proveA (aGoals, db)
   ans = []
   newEnv = "a"
   goalsAndBinds = [{:goals => aGoals, :binds => NO_BINDINGS}]
 
   while not goalsAndBinds.empty?()
-    print("GGGG", goalsAndBinds, "\n")
+#    print("GGGG", goalsAndBinds, "\n")
 
     gb = first(goalsAndBinds)
 
@@ -219,8 +230,8 @@ def proveA (aGoals, db)
     end
     
 
-    print("head ", h, "\n")
-    print("binds ", gb[:binds], "\n")
+#    print("head ", h, "\n")
+#    print("binds ", gb[:binds], "\n")
 
     if first(h) == "either" then
       goalsAndBinds.unshift({:goals =>  h[1] + [["del", newEnv]] + bodyClause(gb[:goals]), :binds => gb[:binds]},
@@ -228,14 +239,20 @@ def proveA (aGoals, db)
       next
     end
 
+    if first(h) == "if-then-else" then
+      goalsAndBinds.unshift({:goals =>  h[1] + [["del", newEnv]] + h[2]+ bodyClause(gb[:goals]), :binds => gb[:binds]},
+                            {:goals =>  [["tag", newEnv]] + h[3] + bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+
     if first(h) == "del" then
       goalsAndBinds.delete_if do |i|
-        print("del h", h, "\n")
-        print("del i", headClause(i[:goals]), "\n")
+#        print("del h", h, "\n")
+#        print("del i", headClause(i[:goals]), "\n")
         (first(headClause(i[:goals])) == "tag") and (headClause(i[:goals])[1] == h[1])
       end                                                                                
       goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
-      print("HHHHHH ", goalsAndBinds, "\n")
+#     print("HHHHHH ", goalsAndBinds, "\n")
       next
     end
 
@@ -244,7 +261,23 @@ def proveA (aGoals, db)
       next
     end
 
+    if first(h) == "print" then
+      print(tail(h), "\n")
+      print("  binds:", gb[:binds], "\n")
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
+    
+    
+    bIndex = BUILT_INS.find_index {|i| i[:pred] == first(h)}
+    if not bIndex.nil?() then
+      if not BUILT_INS[bIndex][:f].call(h, gb[:binds]) then next end
+    
+      goalsAndBinds.unshift({:goals => bodyClause(gb[:goals]), :binds => gb[:binds]})
+      next
+    end
 
+#      print("IIIII ", goalsAndBinds, "\n")
     # there are not in DB
     if db[h.first()].nil?() then 
       next
@@ -287,14 +320,14 @@ end
 
 CS4 = [
   #[["likes", "kim", "robin"]],
-      [["likes", "kim", "robin"]],
+#  [["likes", "kim", "robin"]],
        [["member", "Item", ["Item" , "Rest"]]],
        [["member", "Item", ["_", "Rest"]], ["member", "Item", "Rest"]],
        [["likes", "sandy", "lee"]],
        [["likes", "sandy", "kim"]],
        #       [["either", "X", "Y"]],
        #[["if", "Test", "Then", "Else"], ["either", ["Test"], ["Else"]], ["either", ["Else"], ["Then"]]],
-       [["test", "X"], ["if", ["likes", "X", "robin"], ["test1", "X"], ["unlikeRobin", "X"]]],
+       [["test", "X"], ["if-then-else", [["likes", "X", "robin"], ["print", "hai"]], [["print", "then part"], ["test1", "X"]], [["print", "else part"], ["unlikeRobin", "X"]]]],
        [["unlikeRobin", "kim"]],
        [["likes", "robin", "cats"]],
        [["likes", "sandy", "X"], ["likes", "X", "cats"]],
@@ -303,7 +336,7 @@ CS4 = [
        [["member2", "X", "Ys"], ["append", "As", ["X", "Xs"], "Ys"]],
        [["append", [], "Ys", "Ys"]],
        [["append", ["X", "Xs"], "Ys", ["X", "Zs"]], ["append", "Xs", "Ys", "Zs"]],
-       [["cut"]]
+       [["gttest", "X"], ["if-then-else", [[">", "X", "1"]],  [["print", "then"]], [["print", "else"]]]]
       ]
 DB4 = begin
         db = {}
@@ -319,6 +352,7 @@ Q41 = [["likes", "Who", "sandy"]]
 Q4m = [["member", "X", ["1", ["2", ["3", ["4",[]]]]]]]
 Q4a = [["append", "X", "Y", ["a", ["b", ["c", []]]]]]
 Q4m2 = [["member2", "X", ["1", ["2", ["3", ["4",[]]]]]]]
+Q4lt = [["gttest", "1"]]
 
 def allAns (q, db, var)
   proveA(q, db).map{ |b| substBindings(b, var) }
