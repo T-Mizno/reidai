@@ -109,13 +109,18 @@ def doesOccurs? (var, x, bindings)
 end
 
 def substBindings (bindings, x)
-  #if x.nil?() then return nil end
+  if x.nil?() then return nil end
   if isFail?(bindings) then return MATCH_FAIL end
   if isNoBindings?(bindings) then return x end
   if (isVariable?(x) and (not getBinding(x, bindings).nil?())) then return substBindings(bindings, lookupVarValue(x, bindings)) end
   if isAtom?(x) then return x end
   if x.empty?() then return [] end
   [substBindings(bindings, first(x))] + substBindings(bindings, tail(x))
+end
+
+def resetBinding (var, val, bindings)
+  bindings.delete_if {|b| b[:var] == var}
+  bindings.unshift({:var => var, :value => val})
 end
 
 def unifier (x, y)
@@ -209,7 +214,23 @@ def builtIn_gt (args, bindings)
   return x.to_i() > y.to_i()
 end
 
-BUILT_INS = [{:pred => ">", :f => lambda{|args, binds| builtIn_gt(args, binds)}}]
+def builtIn_plus (args, bindings)
+  if args.length < 4 then return false end
+  xya = substList(bindings, args)
+
+  x = xya[1]
+  y = xya[2]
+  a = xya[3]
+
+  if not isVariable?(a) then return false end
+  resetBinding(a, (x.to_i() + y.to_i()).to_s(), bindings)
+  
+  return true
+end
+
+BUILT_INS = [{:pred => ">", :f => lambda{|args, binds| builtIn_gt(args, binds)}},
+             {:pred => "+", :f => lambda{|args, binds| builtIn_plus(args, binds)}}
+             ]
 
 def proveA (aGoals, db)
   ans = []
@@ -295,10 +316,12 @@ def proveA (aGoals, db)
       newClause = renameVariablesInClause(c, newEnv)
       newBind = unify(h, headClause(newClause), gb[:binds])
 
+#      print("JJJJ ", c, "\n")
+
       if isFail?(newBind) then
         next
       end
-
+      
 
       newGoals = substClause(newBind, bodyClause(newClause)) + bodyClause(gb[:goals])
       #newGoals = bodyClause(gb[:goals]) + substClause(newBind, bodyClause(newClause))
@@ -336,13 +359,28 @@ CS4 = [
        [["member2", "X", "Ys"], ["append", "As", ["X", "Xs"], "Ys"]],
        [["append", [], "Ys", "Ys"]],
        [["append", ["X", "Xs"], "Ys", ["X", "Zs"]], ["append", "Xs", "Ys", "Zs"]],
-       [["gttest", "X"], ["if-then-else", [[">", "X", "1"]],  [["print", "then"]], [["print", "else"]]]]
+       [["gttest", "X"], ["if-then-else", [[">", "X", "1"]],  [["print", "then"]], [["print", "else"]]]],
+       [["length", [], "0"]],
+       [["length", ["X", "Xs"], "L1"], ["length", "Xs", "L"], ["+", "L", "1", "L1"]],
+       [["sum", [], "0"]],
+       [["sum", ["X", "Xs"], "S"], ["sum", "Xs", "Ssub"], ["+", "X", "Ssub", "S"]],
+       [["comb", "X", "1", ["A"]], ["member", "A", "X"]],
+       [["comb", ["A", "Y"], "N", ["A", "X"]], [">", "N", "1"], ["+", "N", "-1", "N1"], ["comb", "Y", "N1", "X"]],
+       [["comb", ["_", "Y"], "N", "A"], [">", "N", "1"], ["comb", "Y", "N", "A"]]
       ]
 DB4 = begin
         db = {}
         CS4.each{|cs| addDB(cs, db)}
         db
       end
+
+def consList(ls)
+  ans = []
+  ls.reverse().each do |x|
+    ans = [x, ans]
+  end
+  ans
+end
 
 Q4t = [["test"]]
 Q4i = [["test", "kim"]]
@@ -353,6 +391,10 @@ Q4m = [["member", "X", ["1", ["2", ["3", ["4",[]]]]]]]
 Q4a = [["append", "X", "Y", ["a", ["b", ["c", []]]]]]
 Q4m2 = [["member2", "X", ["1", ["2", ["3", ["4",[]]]]]]]
 Q4lt = [["gttest", "1"]]
+#Q4l = [["length", ["a", ["b", ["c", []]]], "L"]]
+Q4l = [["length", ["a", ["b", ["c", ["d", []]]]], "Y"]]
+Q4s = [["sum", consList([1,2,3,4,5,6,7,8,9,10].map{|i| i.to_s()}), "Ans"]]
+Q4c = [["comb", consList([1,2,3,4,5].map{|i| i.to_s()}), "3", "X"]]
 
 def allAns (q, db, var)
   proveA(q, db).map{ |b| substBindings(b, var) }
@@ -363,6 +405,8 @@ def testp()
   print(allAns(Q4m, DB4, "X"), "\n")
   print(allAns(Q4m2, DB4, "X"), "\n")
   print(allAns(Q4a, DB4, "X"), "\n")
+  print(allAns(Q4s, DB4, "Ans"), "\n")
+  print(allAns(Q4c, DB4, "X"), "\n")
 end  
 
 def printRelation (r)
