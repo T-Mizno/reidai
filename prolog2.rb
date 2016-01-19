@@ -1,4 +1,4 @@
-# load __dir__ + '/prolog.rb'
+# load __dir__ + '/prolog2.rb'
 
 MATCH_FAIL = "unify-failure"
 DO_OCCURS_CHECK = false
@@ -355,7 +355,13 @@ CS4 = [
        [["sum", ["X", "Xs"], "S"], ["sum", "Xs", "Ssub"], ["+", "X", "Ssub", "S"]],
        [["comb", "X", 1, ["A"]], ["member", "A", "X"]],
        [["comb", ["A", "Y"], "N", ["A", "X"]], [">", "N", 1], ["+", "N", -1, "N1"], ["comb", "Y", "N1", "X"]],
-       [["comb", ["_", "Y"], "N", "A"], [">", "N", 1], ["comb", "Y", "N", "A"]]
+       [["comb", ["_", "Y"], "N", "A"], [">", "N", 1], ["comb", "Y", "N", "A"]],
+       [["ch", "a"]],
+       [["ch", ","]],
+       [["str", []]],
+       [["str", ["X", "Y"]], ["ch","X"], ["str", "Y"]],
+       [["cell", "X", "X"], ["str", "X"]],
+       [["cell", ["\"", ["X", ["\"", ["_" ]]]], "Y"], ["str", "X"]]
       ]
 
 DB4 = begin
@@ -413,3 +419,9 @@ def testp()
   print(allAns(Q4c, DB4, "X"), "\n")
   nil
 end  
+
+def testc(pred, str)
+  q = [[pred, consList(str.split(""))]]
+  print("Q", q, "\n")
+  print(allAns(q, DB4, "X"), "\n")
+end
