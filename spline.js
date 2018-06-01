@@ -10,7 +10,7 @@ function Spline(aX, aF, aN) {
     sp.f1 = new Matrix(aN, 1);  // 0 - N-2
     sp.f2 = new Matrix(aN, 1); // 1 - N-2
 
-    for(var i=0; i < sp.n - 1; i++) sp.h.set(i, 0, sp.x.at(i+1, 0) - sp.x.at(i, 0));
+    for(var i=0; i < sp.n-1; i++) sp.h.set(i, 0, sp.x.at(i+1, 0) - sp.x.at(i, 0));
 
     var H = new Matrix(sp.n-2, sp.n-2);
     //var y = new Matrix(sp.n-2, 1);
@@ -32,6 +32,9 @@ function Spline(aX, aF, aN) {
      for(var i=1; i<sp.n-1; i++) sp.f2.set(i, 0, g.x.at(i-1, 0));
      sp.f2.set(sp.n-1, 0, sp.right_b);
 
+     //sp.f2.set(0, 0, (sp.f2.at(1, 0)+sp.f2.at(sp.n-2, 0))/2.0);
+     //sp.f2.set(sp.n-1, 0, sp.f2.at(0,0));
+
      for(var i=0; i<sp.n-1; i++) {
              sp.f1.set(i, 0,
                  (sp.f.at(i+1, 0) - sp.f.at(i, 0))/ sp.h.at(i, 0) - sp.f2.at(i+1, 0) * sp.h.at(i, 0) / 6.0 - sp.f2.at(i, 0) * sp.h.at(i, 0) / 3.0 );
@@ -41,10 +44,17 @@ function Spline(aX, aF, aN) {
          if(_x < sp.x.at(0, 0)) return 0;
 
          for(var i=0; i<sp.n-1; i++) {
-             if( (x.at(i, 0) <= _x) && (_x <= x.at(i+1, 0)) ) return i;
-                 }
+             if( (sp.x.at(i, 0) <= _x) && (_x <= sp.x.at(i+1, 0)) ) {
+                return i;
+             }
+         }
          return sp.n-2;
      }
+
+     sp.lval = function(_x) {
+       var i = _searchInterval(_x);
+       return (sp.f.at(i+1, 0) - sp.f.at(i, 0))/(sp.x.at(i+1, 0)-sp.x.at(i,0)) * (_x-sp.x.at(i, 0)) + sp.f.at(i, 0);
+     };
 
      sp.val = function(_x) {
          var i = _searchInterval(_x);
@@ -58,6 +68,7 @@ function Spline(aX, aF, aN) {
     return sp;
 }
 
+/*
 var n = 11;
 
 var x = new Matrix(n, 1);
@@ -83,3 +94,4 @@ var lsp = Spline(x, y, n);
 }
 
 lsp.f.stdout();
+*/
