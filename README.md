@@ -35,3 +35,16 @@ Your Pages site will use the layout and styles from the Jekyll theme you have se
 ### Support or Contact
 
 Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+
+# テスト
+
+これはテストです。よろしくお願いいたします。
+
+## 日本語のテストです。
+
+1. テスト
+2. 箇条書きのテストです。
+
+- 箇条書きのテスト。
+- 再度テストです。
+
