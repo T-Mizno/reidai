@@ -145,6 +145,16 @@ function range(start, end){
   return arr;
 }
 
+function normalize(mat) {
+  var _sum = 0.0;
+  for(var i=0; i<mat.m; i++) for(var j=0; j<mat.n; j++) {
+    _sum += mat.at(i,j);
+  }
+  for(var i=0; i<mat.m; i++) for(var j=0; j<mat.n; j++) {
+    mat.set(i,j, mat.at(i,j)/_sum);
+  }
+}
+
 function sum(xs){
   return xs.reduce(function(x, y){return x+y;});
 }
@@ -377,4 +387,4 @@ function gauss_check(n){
     }
   }
 }
-gauss_check(30);
+//gauss_check(30);
