@@ -1,7 +1,8 @@
 package main
 
 import "testing"
-import "math"
+
+//import "math"
 import "time"
 
 /*
@@ -10,10 +11,10 @@ $ golint linear_test.go
 $ go test -v linear_test.go linear.go
 */
 func howLongSeconds(f func()) real {
-		var start = time.Now()
-		f()
-		var end=time.Now()
-		return real(end.Sub(start).Seconds())
+	var start = time.Now()
+	f()
+	var end = time.Now()
+	return real(end.Sub(start).Seconds())
 }
 
 func TestMulti(t *testing.T) {
@@ -51,83 +52,77 @@ func TestPowerMethod(t *testing.T) {
 	var d real
 	var x = newMatrix(n, 1)
 
-	var A = randMatrix(10000, -1, 10, n, n)
+	var rMax = real(10)
 
-	lambda, eigen, itr = powerMethod(A, 100)
+	var A = randMatrix(10000, 1, rMax, n, n)
+
+	lambda, eigen, itr = powerMethod(A, 10, 100)
 
 	multi(A, eigen, x)
 	multiScalar(lambda, eigen, eigen)
 
-	d = matDiff(eigen, x)
+	d = matDiff(eigen, x) / 2 / rMax
 	t.Log("itr: ", itr)
 	t.Log("diff: ", d)
 
-	if d > 0.00001 {
+	if !isZero(d) {
 		t.Errorf("error in power method")
 	}
 }
 
 func TestGaussA20(t *testing.T) {
-	var A20 = newMatrix(3, 3)
-	A20.setFromList([]real {
+	var A20 = newMatrixFromList(3, 3, []real{
 		2, 1, 1,
-	 	4,1,0,
+		4, 1, 0,
 		-2, 2, 1,
 	})
-	var b20 = newMatrix(3, 1)
-	b20.setFromList([]real { 1, -2, 7})
-	var ans = newMatrix(3,1)
-	ans.setFromList([]real { -1, 2, 1})
-	var x, _, _ = gauss(A20, b20)
-	var d = matDiff(x, ans)
+	var b20 = newMatrixFromList(3, 1, []real{1, -2, 7})
+	var ans = newMatrixFromList(3, 1, []real{-1, 2, 1})
+	var gs = gauss(A20, b20)
+	var d = matDiff(gs.x, ans)
 	if !isZero(d) {
 		t.Errorf("error: gauss: A20")
 	}
 }
 
 func TestGaussA58(t *testing.T) {
-	var A = newMatrix(3, 4)
-	A.setFromList([]real {
-		1,3,3,2,
-		2,6,9,5,
+	var A = newMatrixFromList(3, 4, []real{
+		1, 3, 3, 2,
+		2, 6, 9, 5,
 		-1, -3, 3, 0,
 	})
-	var b = newMatrix(3, 1)
-	b.setFromList([]real { 1, 2, -1})
-	var ans = newMatrix(4,1)
-	ans.setFromList([]real { -3, 1, -1.0/3.0, 1})
-	var x, _, _ = gauss(A, b)
-	var d = matDiff(x, ans)
+	var b = newMatrixFromList(3, 1, []real{1, 2, -1})
+	var ans = newMatrixFromList(4, 1, []real{-3, 1, -1.0 / 3.0, 1})
+	var gs = gauss(A, b)
+	var d = matDiff(gs.x, ans)
 	if !isZero(d) {
 		t.Errorf("error: gauss: A58")
 	}
 }
 
 func TestGauss(t *testing.T) {
-	var m = 200
-	var n = 200
+	var m = 500
+	var n = 500
 	var rMax real = 100
 	var A = randMatrix(1000, -rMax, rMax, m, n)
 	var ans = randMatrix(101, -rMax, rMax, n, 1)
 	var b = newMatrix(m, 1)
-	var x Matrix
-	var rank int
-	var solvable bool
-	multi(A,ans, b)
+	multi(A, ans, b)
 
-	x, rank, solvable = gauss(A, b)
+	gs := gauss(A, b)
 
 	var bTmp = newMatrix(m, 1)
-	multi(A, x, bTmp)
+	multi(A, gs.x, bTmp)
 
-	var d = matDiff(b, bTmp)/2/rMax/real(math.Sqrt(float64(m*n)))
-	t.Log("diff div by order: ", d)
-	t.Log("rank:", rank)
+	var d = matDiff(b, bTmp) / 2 / rMax
+	t.Log("diff: ", d)
+	t.Log("rank:", gs.rank)
+	t.Log("time: ", gs.solveTime)
 
-	if !solvable {
+	if !gs.isSolvable {
 		t.Errorf("error: gauss: solvable")
 	}
-	if d > 0.0000001 {
+	if !isZero(d) {
 		t.Errorf("error: gauss: x")
 	}
 }

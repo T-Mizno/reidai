@@ -16,7 +16,7 @@ func assert(t bool) {
 	os.Exit(0)
 }
 
-func isZero(x real) bool { return math.Abs(float64(x)) < 0.00000000001 }
+func isZero(x real) bool { return math.Abs(float64(x)) < 10e-10 }
 
 func foreach(ids []int, f func(i int)) {
 	for _, i := range ids {
@@ -34,26 +34,33 @@ type Matrix struct {
 }
 
 func newMatrix(m int, n int) Matrix {
-	var mat = Matrix{}
-	mat.m = m
-	mat.n = n
-	mat._rowIds = make([]int, m)
+	rowIds := make([]int, m)
 	for i := 0; i < m; i++ {
-		mat._rowIds[i] = i
+		rowIds[i] = i
 	}
-	mat._colIds = make([]int, n)
+	colIds := make([]int, n)
 	for j := 0; j < n; j++ {
-		mat._colIds[j] = j
+		colIds[j] = j
 	}
-	mat._data = make([][]real, m)
+	data := make([][]real, m)
+	foreach(rowIds, func(i int) { data[i] = make([]real, n) })
 
-	foreach(mat.rowIds(), func(i int) {
-		mat._data[i] = make([]real, n)
-	})
-
+	mat := Matrix{m: m, n: n, _rowIds: rowIds, _colIds: colIds, _data: data}
 	mat.fill(0.0)
 
 	return mat
+}
+
+func newMatrixFromList(m int, n int, vs []real) Matrix {
+	var a = newMatrix(m, n)
+	a.setFromList(vs)
+	return a
+}
+
+func newMatrixCopy(aA Matrix) Matrix {
+	var a = newMatrix(aA.m, aA.n)
+	matCopy(aA, a)
+	return a
 }
 
 func (mat Matrix) setFromList(vs []real) Matrix {
@@ -100,7 +107,6 @@ func (mat Matrix) stdout() {
 	foreach(mat.rowIds(), func(i int) {
 		foreach(mat.colIds(), func(j int) {
 			fmt.Printf(" %7.4f", mat.at(i, j))
-			//fmt.Print(" ", mat.at(i, j))
 		})
 		fmt.Println()
 	})
@@ -112,7 +118,7 @@ func multi(a Matrix, b Matrix, ab Matrix) {
 	assert(b.n <= ab.n)
 
 	ab.setf(func(i int, j int) real {
-		var s = real(0.0)
+		s := real(0.0)
 		foreach(a.colIds(), func(k int) {
 			s = s + a.at(i, k)*b.at(k, j)
 		})
@@ -137,7 +143,7 @@ func matCopy(a Matrix, b Matrix) {
 }
 
 func sumOfColumn(a Matrix, j int) real {
-	var sum = real(0.0)
+	sum := real(0.0)
 	foreach(a.rowIds(), func(i int) {
 		sum = sum + a.at(i, j)
 	})
@@ -145,7 +151,7 @@ func sumOfColumn(a Matrix, j int) real {
 }
 
 func normalizeColumn(a Matrix, j int) {
-	var sum = sumOfColumn(a, j)
+	sum := sumOfColumn(a, j)
 	foreach(a.rowIds(), func(i int) {
 		a.set(i, j, a.at(i, j)/sum)
 	})
@@ -155,20 +161,20 @@ func matDiff(a Matrix, b Matrix) real {
 	assert(a.m == b.m)
 	assert(a.n == b.n)
 
-	var d = real(0.0)
+	d := real(0.0)
 	a.foreach(func(i int, j int) {
 		d = d + real(math.Abs(float64(a.at(i, j)-b.at(i, j))))
 	})
-	return d
+	return d / real(math.Max(float64(a.m), float64(a.n)))
 }
 
-func powerMethod(a Matrix, itrMax int) (real, Matrix, int) {
+func powerMethod(a Matrix, itrMin int, itrMax int) (real, Matrix, int) {
 	assert(a.m == a.n)
 
-	var x = newMatrix(a.m, 1)
-	var preX = newMatrix(a.m, 1)
-	var lambda = real(0.0)
-	var itr = 0
+	x := newMatrix(a.m, 1)
+	preX := newMatrix(a.m, 1)
+	lambda := real(0.0)
+	itr := 0
 
 	preX.fill(1.0)
 
@@ -176,8 +182,8 @@ func powerMethod(a Matrix, itrMax int) (real, Matrix, int) {
 		multi(a, preX, x)
 		lambda = x.at(0, 0) / preX.at(0, 0)
 		normalizeColumn(x, 0)
-		var diff = matDiff(x, preX)
-		if isZero(diff) {
+		diff := matDiff(x, preX)
+		if (itr > itrMin) && isZero(diff) {
 			break
 		}
 		itr = itr + 1
@@ -189,102 +195,114 @@ func powerMethod(a Matrix, itrMax int) (real, Matrix, int) {
 	return lambda, x, itr
 }
 
+// GaussSystem : result of Gauss
+type GaussSystem struct {
+	A          Matrix
+	b          Matrix
+	p          []int
+	x          Matrix
+	rank       int
+	baseVars   []int
+	isSolvable bool
+	solveTime  real
+}
 
 func _searchMaxIAndSwap(A Matrix, p []int, fromI int, j int) {
-	var ma = math.Abs(float64(A.at(p[fromI], j)))
-	var maI = fromI
-	for i:=fromI; i<A.m; i++ {
-		var tmp = math.Abs(float64(A.at(p[i], j)))
+	ma := math.Abs(float64(A.at(p[fromI], j)))
+	maI := fromI
+	for i := fromI; i < A.m; i++ {
+		tmp := math.Abs(float64(A.at(p[i], j)))
 		if tmp > ma {
 			ma = tmp
 			maI = i
 		}
 	}
 	// swap
-	var tmpI = p[fromI]
+	tmpI := p[fromI]
 	p[fromI] = p[maI]
 	p[maI] = tmpI
 }
+
 func _pStdout(p []int, A Matrix) {
 	foreach(A.rowIds(), func(i int) {
 		fmt.Printf("%4d:", i)
 		foreach(A.colIds(), func(j int) {
 			fmt.Printf(" %7.4f", A.at(p[i], j))
-			//fmt.Print(" ", mat.at(i, j))
 		})
 		fmt.Println()
 	})
 }
 
-func gauss(aA Matrix, ab Matrix) (Matrix, int, bool) {
+func gauss(aA Matrix, ab Matrix) GaussSystem {
 	assert(ab.m >= aA.m)
 
-	var A = newMatrix(aA.m, aA.n); matCopy(aA, A)
-	var p = make([]int, A.m); for i:=0; i<A.m; i++ { p[i] = i }
-	var b = newMatrix(aA.m, 1); matCopy(ab, b)
-	var x = newMatrix(aA.n, 1); x.fill(1.0)
+	var A = newMatrixCopy(aA)
+	var p = make([]int, A.m)
+	for i := 0; i < A.m; i++ {
+		p[i] = i
+	}
+	var b = newMatrixCopy(ab)
+	var x = newMatrix(aA.n, 1)
+	x.fill(1.0)
+
+	var baseVarsFlg = make([]bool, A.n)
+	for j := 0; j < A.n; j++ {
+		baseVarsFlg[j] = false
+	}
+	var isSolvable = true
 
 	var start = time.Now()
 
-	var baseVarsFlg = make([]bool, A.n); for j:=0; j<A.n; j++ { baseVarsFlg[j] = false }
-
-	var isSolvable = true
-
-	var pivotI, pivotJ int
-	pivotI = -1
-	pivotJ = -1
+	var pivotI, pivotJ = -1, -1
 	for {
 		pivotI++
 		pivotJ++
-		if(pivotI >= A.m) { break }
-		if(pivotJ >= A.n) { break }
+		if pivotI >= A.m {
+			break
+		}
+		if pivotJ >= A.n {
+			break
+		}
 
 		_searchMaxIAndSwap(A, p, pivotI, pivotJ)
-		if isZero(A.at(p[pivotI], pivotJ)) { continue }
-
-		// fmt.Printf("pivotI:pivotJ = %d:%d\n", pivotI, pivotJ)
-		baseVarsFlg[pivotJ] = true
-		for i:=pivotI+1; i< A.m; i++ {
-			A.set(p[i], pivotJ, A.at(p[i], pivotJ)/A.at(p[pivotI], pivotJ))
-			for j:=pivotJ+1; j<A.n; j++ {
-				A.set(p[i], j, A.at(p[i], j) - A.at(p[i], pivotJ) * A.at(p[pivotI], j))
-			}
-			b.set(p[i], 0, b.at(p[i],0)- A.at(p[i], pivotJ) * b.at(p[pivotI], 0))
-
+		if isZero(A.at(p[pivotI], pivotJ)) {
+			continue
 		}
-			//fmt.Println(baseVarsFlg)
-			//_pStdout(p, A)
-			//_pStdout(p, b)
+
+		baseVarsFlg[pivotJ] = true
+		for i := pivotI + 1; i < A.m; i++ {
+			A.set(p[i], pivotJ, A.at(p[i], pivotJ)/A.at(p[pivotI], pivotJ))
+			for j := pivotJ + 1; j < A.n; j++ {
+				A.set(p[i], j, A.at(p[i], j)-A.at(p[i], pivotJ)*A.at(p[pivotI], j))
+			}
+			b.set(p[i], 0, b.at(p[i], 0)-A.at(p[i], pivotJ)*b.at(p[pivotI], 0))
+		}
 	}
 
 	var baseVarsNum = 0
 	var baseVars = make([]int, A.n)
-	for j:=0; j<A.n; j++ {
-		if baseVarsFlg[j] { baseVars[baseVarsNum] = j; baseVarsNum++ }
+	for j := 0; j < A.n; j++ {
+		if baseVarsFlg[j] {
+			baseVars[baseVarsNum] = j
+			baseVarsNum++
+		}
 	}
-	for i:=baseVarsNum; i<A.m; i++ {
-		isSolvable = isSolvable && isZero(b.at(p[i], 0))
+	for i := baseVarsNum; i < A.m; i++ {
+		isSolvable = isSolvable && isZero(b.at(p[i], 0)/real(A.n))
 	}
-	//fmt.Println("Solvable?", isSolvable)
-	//fmt.Println("baseVars", baseVars)
 
-	for i:=baseVarsNum-1; i>=0; i-- {
+	for i := baseVarsNum - 1; i >= 0; i-- {
 		var sum = real(0.0)
-		for j:= baseVars[i]+1; j<A.n; j++ {
+		for j := baseVars[i] + 1; j < A.n; j++ {
 			sum += A.at(p[i], j) * x.at(j, 0)
 		}
-		x.set(baseVars[i], 0, (b.at(p[i], 0) - sum)/A.at(p[i], baseVars[i]))
+		x.set(baseVars[i], 0, (b.at(p[i], 0)-sum)/A.at(p[i], baseVars[i]))
 	}
 
-	//fmt.Println("x"); x.stdout()
-	//fmt.Println(baseVarsFlg)
 	var end = time.Now()
 
-	fmt.Println("time: ", end.Sub(start).Seconds(), "sec.")
-
-	return x, baseVarsNum, isSolvable
+	return GaussSystem{A: A, b: b, p: p, x: x, rank: baseVarsNum, baseVars: baseVars, isSolvable: isSolvable, solveTime: real(end.Sub(start).Seconds())}
 }
-
 
 func main() {
 
