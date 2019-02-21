@@ -20,8 +20,21 @@ struct _MyzMatrix {
 };
 typedef struct _MyzMatrix MyzMatrix;
 
+struct _GaussSystem {
+        MyzMatrix *A;
+        int *p;
+        MyzMatrix *b;
+        MyzMatrix *x;
+        //MyzMatrix *xs;
+        int rank;
+        int *baseVars;
+        int isSolvable;
+        DTYPE solveTime;
+};
+typedef struct _GaussSystem GaussSystem;
+
 struct _GaussResult
-{ 
+{
     int *flgBaseJs;
     int *baseJs;
     MyzMatrix *x;
@@ -38,8 +51,11 @@ int matN(MyzMatrix *A);
 DTYPE at(MyzMatrix *A, int i, int j);
 int set(MyzMatrix *A, int i, int j, DTYPE val);
 
+MyzMatrix *matCopy(MyzMatrix *A);
+DTYPE matDiff1(MyzMatrix *A, MyzMatrix *B);
 
-DTYPE epsillon = 10e-10;
+
+DTYPE epsillon = 10e-15;
 
 int almostEqual(DTYPE val1, DTYPE val2)
 {
@@ -111,6 +127,20 @@ MyzMatrix *newMyzMatrix(int M, int N)
     return Mat;
 }
 
+MyzMatrix *newRandMyzMatrix(int seed, DTYPE rMin, DTYPE rMax, int m, int n)
+{
+    MyzMatrix *mat = newMyzMatrix(m, n);
+    int i,j;
+
+    srand(seed);
+    for(i=0; i<matM(mat); i++) {
+        for(j=0; j<matN(mat); j++) {
+            set(mat, i, j, (rMax-rMin)*((DTYPE)rand()/(DTYPE)RAND_MAX)+rMin);
+        }
+    }
+    return mat;
+}
+
 MyzMatrix *newColAccessMyzMatrix(int M, int N)
 {
     MyzMatrix *mat;
@@ -140,7 +170,7 @@ void freeMyzMatrix(MyzMatrix *A)
         A->_M = A->_N;
     }
 
-    
+
     for(i=0; i<matM(A); i++) {
         free(A->_entity[i]);
     }
@@ -156,7 +186,7 @@ DTYPE at(MyzMatrix *A, int i, int j)
     if(A->isColMode) {
         return A->_entity[j][i];
     }
-    
+
     return A->_entity[i][j];
 }
 
@@ -169,7 +199,7 @@ int set(MyzMatrix *A, int i, int j, DTYPE val)
         A->_entity[j][i] = val;
         return 0;
     }
-    
+
     A->_entity[i][j] = val;
     return 0;
 }
@@ -181,6 +211,18 @@ void stdoutMyzMatrix(MyzMatrix *A)
         for(j=0; j<matN(A); j++) {
             //printf(" %5.3f", at(A, i,j));
             printf(" %11.9f", at(A, i,j));
+        }
+        printf("\n");
+    }
+}
+
+void pStdout(int *p, MyzMatrix *A) {
+    int i, j;
+    for(i=0; i<matM(A); i++) {
+        printf("%4d:", p[i]);
+        for(j=0; j<matN(A); j++) {
+            //printf(" %5.3f", at(A, i,j));
+            printf(" %11.9f", at(A, p[i], j));
         }
         printf("\n");
     }
@@ -199,6 +241,12 @@ void stdoutPMatrix(int *P, MyzMatrix *A)
     return;
 }
 
+/*
+GaussSytem *newGaussSystem(MyzMatrix *aA, MyzMatrix *ab, int rank) {
+    GaussSystem
+}
+*/
+
 GaussResult *newGaussResult(int M, int N)
 {
     GaussResult *result = NULL;
@@ -216,13 +264,22 @@ GaussResult *newGaussResult(int M, int N)
     }
 
     result->baseJs = NULL;
-    
+
     //result->x = newColAccessMyzMatrix(N, 1);
     result->x = newMyzMatrix(N, 1);
     result->xs = NULL;
 
     result->numOfXs = 0;
     return result;
+}
+
+void freeGaussSystem(GaussSystem *gs) {
+    if(gs->A != NULL) freeMyzMatrix(gs->A);
+    if(gs->b != NULL) freeMyzMatrix(gs->b);
+    if(gs->p != NULL) free(gs->p);
+    if(gs->x != NULL) freeMyzMatrix(gs->x);
+    if(gs->baseVars != NULL) free(gs->baseVars);
+    free(gs);
 }
 
 void freeGaussResult(GaussResult *result)
@@ -256,7 +313,7 @@ void stdoutGaussResult(GaussResult *result, int M, int N)
         printf(" %d", result->baseJs[j]);
     }
     printf("\n");
-    
+
     printf("x:\n");
     stdoutMyzMatrix(result->x);
     printf("numOfBaseJs: %d\n", (N - result->numOfXs));
@@ -264,7 +321,7 @@ void stdoutGaussResult(GaussResult *result, int M, int N)
         printf("xs:\n");
         stdoutMyzMatrix(result->xs);
     }
-}   
+}
 
 int searchMaxIAndSwapI(int *P, MyzMatrix *A, int pivotI, int pivotJ)
 {
@@ -295,7 +352,7 @@ int backward(int *P, MyzMatrix *A, MyzMatrix *b, MyzMatrix *x, int xsI, GaussRes
 
     //stdoutGaussResult(r, matM(A), matN(A));
     //printf("go");
-    
+
     for(i=(matN(A) - r->numOfXs) -1; i>=0; i--) {
         double tmpb = 0.0;
         for(j=r->baseJs[i]+1; j<matN(A); j++) {
@@ -306,7 +363,7 @@ int backward(int *P, MyzMatrix *A, MyzMatrix *b, MyzMatrix *x, int xsI, GaussRes
 
         //        set(x, r->baseJs[j], xsI, 2.0);
     }
-    
+
     return 0;
 }
 
@@ -318,7 +375,7 @@ int gauss(int *P, MyzMatrix *A, MyzMatrix *b, GaussResult *r)
     DTYPE pivot;
     int M = matM(A);
     int N = matN(A);
-    
+
     pivotI = 0;
     pivotJ = 0;
 
@@ -352,7 +409,7 @@ int gauss(int *P, MyzMatrix *A, MyzMatrix *b, GaussResult *r)
         stdoutPMatrix(P, A);
         stdoutPMatrix(P, b);
         */
-        
+
         pivotI++;
         pivotJ++;
     }
@@ -375,7 +432,7 @@ int gauss(int *P, MyzMatrix *A, MyzMatrix *b, GaussResult *r)
             }
         }
     }
-    
+
 
     r->xs = newColAccessMyzMatrix(N, r->numOfXs);
     for(i=0; i<r->numOfXs; i++) {
@@ -412,6 +469,92 @@ int gauss(int *P, MyzMatrix *A, MyzMatrix *b, GaussResult *r)
 
 }
 
+GaussSystem *gauss2(MyzMatrix *aA, MyzMatrix *ab) {
+    assert(matM(ab) >= matM(aA));
+
+    MyzMatrix *A = matCopy(aA);
+    MyzMatrix *b = matCopy(ab);
+    int *p = newVectorI(matM(A));
+    MyzMatrix *x = newMyzMatrix(matN(A), 1);
+    int baseVarsNum = 0;
+    int *baseVarsFlg = newVectorI(matN(A));
+    int *baseVars = newVectorI(matN(A));
+    int isSolvable = (1==1); // true
+    clock_t start_t, end_t;
+    DTYPE solveTime;
+    int pivotI, pivotJ, i, j;
+
+    GaussSystem *result = NULL;
+
+    start_t = clock();
+
+    for(i=0; i<matM(A); i++) { p[i] = i; }
+    for(j=0; j<matN(A); j++) { baseVarsFlg[j] = (1 !=1);  }
+
+    // forward
+    pivotI = -1; pivotJ = -1;
+    while(1==1) {
+        pivotI++; pivotJ++;
+        if(  (pivotI >= matM(A))  ||  (pivotJ >= matN(A))  ) {
+            break;
+        }
+
+        searchMaxIAndSwapI(p, A, pivotI, pivotJ);
+        if(almostZero(at(A, p[pivotI], pivotJ))) {
+            continue;
+        }
+        baseVarsFlg[pivotJ] = (1==1); //true
+        for(i=pivotI+1; i<matM(A); i++) {
+            DTYPE pVal = at(A, p[i], pivotJ)/at(A, p[pivotI], pivotJ);
+            set(A, p[i], pivotJ,  pVal);
+            for(j=pivotJ+1; j<matN(A); j++) {
+                set(A, p[i], j, at(A, p[i], j) - pVal*at(A, p[pivotI], j));
+            }
+            set(b, p[i], 0, at(b, p[i], 0)-pVal*at(b, p[pivotI], 0));
+        }
+    }  // end of forward
+
+
+    //backward
+    matFill(x, 1.0);
+    for(j=0, baseVarsNum=0; j<matN(A); j++) {
+        if(baseVarsFlg[j]) {
+            baseVars[baseVarsNum] = j;
+            baseVarsNum++;
+        }
+    }
+    for(i=baseVarsNum; i<matM(A); i++) {
+        isSolvable = isSolvable && almostZero(at(b, p[i], 0)/((DTYPE)matN(A)));
+    }
+    for(i=baseVarsNum-1; i>=0; i--) {
+        DTYPE sum = 0.0;
+        for(j=baseVars[i]+1; j<matN(A); j++) {
+            sum += at(A, p[i], j) * at(x, j, 0);
+        }
+        set(x, baseVars[i], 0, (at(b, p[i], 0)-sum)/at(A, p[i], baseVars[i]));
+    }
+
+    end_t = clock();
+    solveTime = (DTYPE)(end_t - start_t)/CLOCKS_PER_SEC;
+
+
+    //build result
+    result = (GaussSystem *) malloc(sizeof(GaussSystem));
+    if(result == NULL) {
+        exit(-1);
+    }
+
+    result->A = A;
+    result->p = p;
+    result->b = b;
+    result->x = x;
+    result->rank = baseVarsNum;
+    result->baseVars = baseVars;
+    result->isSolvable = isSolvable;
+    result->solveTime = solveTime;
+
+    return result;
+}
 
 DTYPE productRowCol(MyzMatrix *A, MyzMatrix *B, int i, int j)
 {
@@ -451,7 +594,7 @@ int setScalarMulti(DTYPE val, MyzMatrix *A)
             set(A, i, j, val * at(A, i, j));
         }
     }
-    return 0;        
+    return 0;
 }
 
 int setMatCopy(MyzMatrix *A, MyzMatrix *C)
@@ -482,7 +625,7 @@ MyzMatrix *matCopyColAccess(MyzMatrix *A)
     MyzMatrix *C;
     C = newColAccessMyzMatrix(matM(A), matN(A));
     setMatCopy(A, C);
-                            
+
     return C;
 }
 
@@ -493,7 +636,7 @@ DTYPE errorX(MyzMatrix *A, MyzMatrix *xs, int xsI, MyzMatrix *b)
     DTYPE tmp;
     int M = matM(A);
     int N = matN(A);
-    
+
     DTYPE error = 0.0;
 
     for(i=0; i<M; i++) {
@@ -511,7 +654,7 @@ DTYPE errorXs(MyzMatrix *A, GaussResult *r)
     MyzMatrix *b = newMyzMatrix(matM(A), 1);
     DTYPE error = 0.0;
     int i;
-    
+
     for(i=0; i<matM(A); i++) {
         set(b, i, 0, 0.0);
     }
@@ -522,60 +665,27 @@ DTYPE errorXs(MyzMatrix *A, GaussResult *r)
     return error;
 }
 
+int testFrame2(MyzMatrix *aA, MyzMatrix *ab) {
+    GaussSystem *gs = gauss2(aA, ab);
+    MyzMatrix *tmpB = matCopy(ab);
 
-int testFrame(MyzMatrix *aA, MyzMatrix *ab)
-{
-    int M = matM(aA);
-    int N = matN(aA);
-    GaussResult *r = newGaussResult(M, N);
-    MyzMatrix *A = matCopy(aA);
-    MyzMatrix *b = matCopy(ab);
-    int *P;
-    int i;
-
-    P = newVectorI(M);
-    for(i=0; i<M; i++) {
-        P[i] = i;
+    if(gs->isSolvable) {
+        printf("solvable!,  ");
+    }
+    else {
+        printf("NOT solvable,  ");
     }
 
-    /*
-    printf("M=%d, N=%d\n", M, N);
-    printf("A\n");
-    stdoutMyzMatrix(A);
-    printf("b\n");
-    stdoutMyzMatrix(b);
-    */
-    
-    {
-        time_t start_t, end_t;
-        start_t = clock();
-        gauss(P, A, b, r);
-        end_t = clock();
-        //printf("Clock Time: %ld\n", end_t - start_t);
-        printf("%d, %ld\n", M, end_t - start_t);
-    }
-    
-    //    stdoutGaussResult(r, M, N);
+    printf("Rank is %d,  ", gs->rank);
+    printf("solve time: %fsec,  ", gs->solveTime);
 
-    {
-        DTYPE tmpe = errorX(aA, r->x, 0, ab);
+    setMatMulti(aA, gs->x, tmpB);
+    printf("diff %15.10f\n", matDiff1(ab, tmpB));
 
-        if(tmpe >= 1.0) {
-        printf("errorX  %f\n", errorX(aA, r->x, 0, ab));
-        printf("errorXs %f\n", errorXs(aA, r));
-            stdoutMyzMatrix(aA);
-            stdoutMyzMatrix(ab);
-            stdoutPMatrix(P, A);
-            stdoutPMatrix(P, b);
-            stdoutGaussResult(r, M, N);
-        }
-    }
+    freeMyzMatrix(tmpB);
 
-    freeMyzMatrix(A);
-    freeMyzMatrix(b);
-    free(P);
-    freeGaussResult(r);
-    
+    freeGaussSystem(gs);
+
     return 1;
 }
 
@@ -669,7 +779,7 @@ void matNormalizeCol1(MyzMatrix *A)
         for(i=0; i<matM(A); i++) {
             set(A, i, j, at(A, i, j)/sum);
         }
-    }        
+    }
 }
 
 MyzMatrix *powerMethod(MyzMatrix *A, int itrMax)
@@ -687,7 +797,7 @@ MyzMatrix *powerMethod(MyzMatrix *A, int itrMax)
     do {
         matNormalizeCol1(preX);
         setMatMulti(A, preX, x);
-        lambda = at(x, 0, 0) / at(preX, 0, 0); 
+        lambda = at(x, 0, 0) / at(preX, 0, 0);
         setScalarMulti(1.0/lambda, x);
         // swap
         {
@@ -741,38 +851,32 @@ int main(void)
     MyzMatrix *A, *b;
     int M, N;
 
-    /*
-    for(M=2000; M<=2005; M++) {
+    //test2();
+
+    for(M=1000; M<=1005; M++) {
         {
             int i, j;
-            N = M;
-            A = newMyzMatrix(M, N);
-            b = newMyzMatrix(M, 1);
-            for(i=0; i<M; i++) {
-                DTYPE tmp=0.0;
-                for(j=0; j<N; j++) {
-                    set(A, i, j, sin(0.01 * (double)(i*j)) + cos((double)(i+j)));
-                    tmp += at(A, i, j) * (double)j;
-                }
-                set(b, i, 0, tmp);
-            }
+            N = M+10;
+            A = newRandMyzMatrix(1, -10, 10, M, N);
+            b = newRandMyzMatrix(2, -10, 10, M, 1);
         }
-        testFrame(A, b);
+        testFrame2(A, b);
 
         freeMyzMatrix(A);
         freeMyzMatrix(b);
     }
-    */
+
 
     /*
     A = newMyzMatrixFromArray(a58, 3, 4);
     b = newMyzMatrixFromArray(b58,  3, 1);
-    testFrame(A, b);
-    
+    testFrame2(A, b);
+
     freeMyzMatrix(A);
     freeMyzMatrix(b);
     */
 
+    /*
     A = newMyzMatrixFromArray(p72C1p, 3, 3);
     b = powerMethod(A, 100);
 
@@ -780,6 +884,7 @@ int main(void)
     stdoutMyzMatrix(b);
 
     freeMyzMatrix(A);
-    
+    */
+
     return 0;
 }
