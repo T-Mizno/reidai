@@ -14,9 +14,7 @@
 struct _MyzMatrix {
     int _M;
     int _N;
-
     int isColMode;
-
     DTYPE **_entity;
 };
 typedef struct _MyzMatrix MyzMatrix;
@@ -33,6 +31,14 @@ struct _GaussSystem {
     DTYPE solveTime;
 };
 typedef struct _GaussSystem GaussSystem;
+
+struct _PowerMethodResult {
+    MyzMatrix *x;
+    DTYPE lambda;
+    int itr;
+    DTYPE solveTime;
+};
+typedef struct _PowerMethodResult PowerMethodResult;
 
 int matM(MyzMatrix *A);
 int matN(MyzMatrix *A);
@@ -120,9 +126,7 @@ void setRandVal(MyzMatrix *a, int seed, DTYPE rMin, DTYPE rMax) {
 
 MyzMatrix *newRandMyzMatrix(int seed, DTYPE rMin, DTYPE rMax, int m, int n) {
     MyzMatrix *mat = newMyzMatrix(m, n);
-
     setRandVal(mat, seed, rMin, rMax);
-
     return mat;
 }
 
@@ -152,6 +156,7 @@ MyzMatrix *newColAccessMyzMatrix(int M, int N) {
 
 void freeMyzMatrix(MyzMatrix *A) {
     int i;
+
     if(A == NULL) return;
 
     if(A->isColMode) {
@@ -193,7 +198,7 @@ void stdoutMyzMatrix(MyzMatrix *A) {
     int i, j;
     for(i=0; i<matM(A); i++) {
         for(j=0; j<matN(A); j++) {
-            printf(" %11.9f", at(A, i,j));
+            printf(" %11.7f", at(A, i,j));
         }
         printf("\n");
     }
@@ -204,7 +209,6 @@ void pStdout(int *p, MyzMatrix *A) {
     for(i=0; i<matM(A); i++) {
         printf("%4d:", p[i]);
         for(j=0; j<matN(A); j++) {
-            //printf(" %5.3f", at(A, i,j));
             printf(" %11.9f", at(A, p[i], j));
         }
         printf("\n");
@@ -212,12 +216,19 @@ void pStdout(int *p, MyzMatrix *A) {
 }
 
 void freeGaussSystem(GaussSystem *gs) {
+    if(gs == NULL) return;
     if(gs->A != NULL) freeMyzMatrix(gs->A);
     if(gs->b != NULL) freeMyzMatrix(gs->b);
     if(gs->p != NULL) free(gs->p);
     if(gs->x != NULL) freeMyzMatrix(gs->x);
     if(gs->baseVars != NULL) free(gs->baseVars);
     free(gs);
+}
+
+void freePowerMethodResult(PowerMethodResult *r) {
+    if(r == NULL) return;
+    if(r->x == NULL) freeMyzMatrix(r->x);
+    free(r);
 }
 
 int searchMaxIAndSwapI(int *P, MyzMatrix *A, int pivotI, int pivotJ)
@@ -309,7 +320,6 @@ GaussSystem *gauss2(MyzMatrix *aA, MyzMatrix *ab) {
     end_t = clock();
     solveTime = (DTYPE)(end_t - start_t)/CLOCKS_PER_SEC;
 
-
     //build result
     result = (GaussSystem *) malloc(sizeof(GaussSystem));
     if(result == NULL) {
@@ -381,6 +391,7 @@ int setMatCopy(MyzMatrix *A, MyzMatrix *C) {
 
 MyzMatrix *matCopy(MyzMatrix *A) {
     MyzMatrix *C;
+
     if(A->isColMode) {
         C = newColAccessMyzMatrix(matM(A), matN(A));
     }
@@ -431,16 +442,19 @@ void matNormalizeCol1(MyzMatrix *A) {
     }
 }
 
-MyzMatrix *powerMethod(MyzMatrix *A, int itrMin, int itrMax) {
+PowerMethodResult *powerMethod(MyzMatrix *A, int itrMin, int itrMax) {
     MyzMatrix *x, *preX;
     DTYPE lambda = 1.0;
     int count;
+    PowerMethodResult *result = NULL;
+    time_t start_t, end_t;
 
     //x = newMyzMatrix(matM(A), 1);
     x = newColAccessMyzMatrix(matM(A), 1);
     matFill(x, 1.0);
     preX = matCopy(x);
 
+    start_t = clock();
     count = 0;
     while(1==1) {
         if(count > itrMax) break;
@@ -453,14 +467,24 @@ MyzMatrix *powerMethod(MyzMatrix *A, int itrMin, int itrMax) {
         if((count>itrMin) && isZero(matDiff1(x, preX))) break;
         count++;
     }
-
-    printf("lambda: %f, itr: %d\n", lambda, count);
+    end_t = clock();
 
     freeMyzMatrix(preX);
 
     matNormalizeCol1(x);
 
-    return x;
+    // build result
+    result = (PowerMethodResult *) malloc(sizeof(PowerMethodResult));
+    if(result == NULL) {
+        exit(-1);
+    }
+
+    result->x = x;
+    result->lambda = lambda;
+    result->itr = count;
+    result->solveTime = (DTYPE)(end_t - start_t)/((DTYPE) CLOCKS_PER_SEC);
+
+    return result;
 }
 
 DTYPE a58[]= {
@@ -570,39 +594,21 @@ int testGauss(MyzMatrix *aA, MyzMatrix *ab) {
     return 1;
 }
 
-int testPower(int m, int itrMin, int itrMax) {
-    MyzMatrix *A = newMyzMatrix(m, m);
-    MyzMatrix *x;
-
-    time_t start_t, end_t;
-    int seed;
-    DTYPE r=0.01;
-    int itr;
+int testPower(MyzMatrix *A, int itrMin, int itrMax) {
+    PowerMethodResult *result;
     DTYPE diff;
     MyzMatrix *tmpX;
 
-    for(itr=0; itr<3; itr++) {
-        seed = 1000+itr*10;
-        r *= 100;
-        printf("power: seed:%d, rMax:%f\n", seed, r);
+    result = powerMethod(A, itrMin, itrMax);
+    tmpX = matCopy(result->x);
+    setMatMulti(A, result->x, tmpX);
+    matNormalizeCol1(tmpX);
+    diff = matDiff1(result->x, tmpX);
 
-        setRandVal(A, seed, -r, r);
+    printf("PowerMethod: M=%d, time=%f, diff=%15.13f, itr=%d\n", matM(result->x), result->solveTime, diff, result->itr);
 
-        start_t = clock();
-        x = powerMethod(A, itrMin, itrMax);
-        end_t = clock();
-
-        tmpX = matCopy(x);
-        setMatMulti(A, x, tmpX);
-        matNormalizeCol1(tmpX);
-        diff = matDiff1(x, tmpX);
-
-        printf("time=%f,  diff=%15.13f, m=%d\n", (double)(end_t - start_t)/CLOCKS_PER_SEC, diff, m);
-    }
-
-    freeMyzMatrix(A);
-    freeMyzMatrix(x);
     freeMyzMatrix(tmpX);
+    freePowerMethodResult(result);
 
     return 1;
 }
@@ -624,8 +630,8 @@ int main(void)
     for(M=100; M<=105; M++) {
 
         N = M+10;
-        A = newRandMyzMatrix(1, -10, 10, M, N);
-        b = newRandMyzMatrix(2, -10, 10, M, 1);
+        A = newRandMyzMatrix(1+M, -10, 10, M, N);
+        b = newRandMyzMatrix(2+M, -10, 10, M, 1);
 
         testGauss(A, b);
 
@@ -633,16 +639,21 @@ int main(void)
         freeMyzMatrix(b);
     }
 
-    A = newMyzMatrixFromArray(p1, 3, 3);
-    b = powerMethod(A, 0, 100);
-    stdoutMyzMatrix(A);
-    stdoutMyzMatrix(b);
+    A = newMyzMatrixFromArray(p1, 6, 6);
+    testPower(A, 30, 500);
     freeMyzMatrix(A);
-    freeMyzMatrix(b);
 
-    for(M=1000; M<=1001; M++) {
-        A = newRandMyzMatrix(1, -10, 10, M, N);
-        testPower(M, 0, 100);
+    A = newMyzMatrixFromArray(p72C1p, 3, 3);
+    testPower(A, 30, 100);
+    freeMyzMatrix(A);
+
+    A = newMyzMatrixFromArray(p72C2, 4, 4);
+    testPower(A, 30, 100);
+    freeMyzMatrix(A);
+
+    for(M=100; M<105; M++) {
+        A = newRandMyzMatrix(1+M, -10, 10, M, M);
+        testPower(A, 300, 10000);
         freeMyzMatrix(A);
     }
 
